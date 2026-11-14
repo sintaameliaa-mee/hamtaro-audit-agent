@@ -1,0 +1,10 @@
+3a. attack PoC re-run in a fresh process: PASS (reproduces)
+3b. counterfactual vs DemoVaultFixed: attack FAILS, funds stay put (the bug is the code order, not the test)
+3c. source order in DemoVault.sol: external call line 38 BEFORE balance update line 40 — root cause confirmed in source
+    source order in DemoVaultFixed.sol: balance update line 26 BEFORE call line 27 — fix is real
+3d. gate — lower-trust principal: any depositor (no role, no privilege)
+3d. gate — accepted input: a plain withdraw() call after a 1-ether deposit
+3d. gate — intended control: the balances ledger: each caller withdraws at most its own deposit
+3d. gate — crossed boundary: the vault pays out other users' deposits to the attacker
+3d. gate — observed result: vault 0 ether; attacker 11 ether (10 ether victim funds); 10 re-entries
+verdict: the verifier could not refute the candidate. Finding stands.

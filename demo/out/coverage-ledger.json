@@ -1,0 +1,130 @@
+[
+  {
+    "coverage_id": "demo%23DemoVault-accounting::demo%2Fsrc%2FDemoVault.sol%23balances::profile%2Fdemo%2Fvault::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "demo#DemoVault-accounting",
+      "boundary": "demo/src/DemoVault.sol#balances",
+      "subsystem": "profile/demo/vault",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "demo#DemoVault-accounting",
+    "boundary": "demo/src/DemoVault.sol#balances",
+    "subsystem": "profile/demo/vault",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "demo/src/DemoVault.sol"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-demo",
+    "reviewed_paths": [
+      "demo/src/DemoVault.sol"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-demo",
+        "reviewed_paths": [
+          "demo/src/DemoVault.sol"
+        ],
+        "invariant": "honest deposit + full withdrawal leaves the user whole and the ledger zeroed",
+        "method": "local",
+        "result": "Holds. testHonestWithdrawWorks: vault 0, ledger 0, victim balance restored.",
+        "artifact": "agents/hunter-demo/artifacts/forge-test.log"
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "demo%23DemoVault-deposit::demo%2Fsrc%2FDemoVault.sol%23deposit::profile%2Fdemo%2Fvault::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "demo#DemoVault-deposit",
+      "boundary": "demo/src/DemoVault.sol#deposit",
+      "subsystem": "profile/demo/vault",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "demo#DemoVault-deposit",
+    "boundary": "demo/src/DemoVault.sol#deposit",
+    "subsystem": "profile/demo/vault",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "demo/src/DemoVault.sol"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-demo",
+    "reviewed_paths": [
+      "demo/src/DemoVault.sol"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-demo",
+        "reviewed_paths": [
+          "demo/src/DemoVault.sol"
+        ],
+        "invariant": "deposit() credits exactly the sent value to the sender",
+        "method": "local",
+        "result": "Holds. testHonestWithdrawWorks deposits 10 ether and the ledger reads 10 ether before withdrawal.",
+        "artifact": "agents/hunter-demo/artifacts/forge-test.log"
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "demo%23DemoVault-withdraw::demo%2Fsrc%2FDemoVault.sol%23withdraw::profile%2Fdemo%2Fvault::ATTACK-CLASSES.md%23Reentrancy",
+    "canonical_refs": {
+      "surface": "demo#DemoVault-withdraw",
+      "boundary": "demo/src/DemoVault.sol#withdraw",
+      "subsystem": "profile/demo/vault",
+      "attack_class": "ATTACK-CLASSES.md#Reentrancy"
+    },
+    "surface": "demo#DemoVault-withdraw",
+    "boundary": "demo/src/DemoVault.sol#withdraw",
+    "subsystem": "profile/demo/vault",
+    "attack_class": "ATTACK-CLASSES.md#Reentrancy",
+    "starting_paths": [
+      "demo/src/DemoVault.sol",
+      "demo/src/Attacker.sol"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "hunter-demo",
+    "reviewed_paths": [
+      "demo/src/DemoVault.sol",
+      "demo/src/Attacker.sol"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-demo",
+        "reviewed_paths": [
+          "demo/src/DemoVault.sol",
+          "demo/src/Attacker.sol"
+        ],
+        "invariant": "withdraw() pays the caller at most its recorded balance, once",
+        "method": "local",
+        "result": "VIOLATED. testReentrancyDrainsVault: a 1-ether attacker drains the whole vault (11 ether out, 10 of them victim funds); independently re-run and counterfactually confirmed against DemoVaultFixed.",
+        "artifact": "agents/hunter-demo/artifacts/forge-test.log"
+      }
+    ],
+    "result_fingerprints": [
+      "demo-vault:withdraw:reentrancy"
+    ],
+    "unresolved": []
+  }
+]

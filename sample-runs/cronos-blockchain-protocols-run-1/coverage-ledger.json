@@ -1,0 +1,1326 @@
+[
+  {
+    "coverage_id": "chain-main%2Fx%23Inflation%2BSupply%2BTieredRewards%2BNftTransfer::chain-main%2Fx%2Finflation%2Fkeeper%23Mint::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "chain-main/x#Inflation+Supply+TieredRewards+NftTransfer",
+      "boundary": "chain-main/x/inflation/keeper#Mint",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "chain-main/x#Inflation+Supply+TieredRewards+NftTransfer",
+    "boundary": "chain-main/x/inflation/keeper#Mint",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "x/inflation/keeper/mint.go",
+      "x/inflation/keeper/keeper.go",
+      "x/inflation/keeper/msg_server.go",
+      "x/inflation/keeper/genesis.go",
+      "x/supply/keeper/keeper.go",
+      "x/tieredrewards/keeper/claim_rewards.go",
+      "x/tieredrewards/keeper/bonus_rewards.go",
+      "x/tieredrewards/keeper/delegation.go",
+      "x/tieredrewards/keeper/force_exit.go",
+      "x/tieredrewards/keeper/abci.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-chainmain",
+    "reviewed_paths": [
+      "x/inflation/keeper/keeper.go",
+      "x/inflation/keeper/mint.go",
+      "x/inflation/keeper/msg_server.go",
+      "x/nft-transfer/ibc_module.go",
+      "x/nft-transfer/keeper/keeper.go",
+      "x/nft-transfer/keeper/packet.go",
+      "x/nft-transfer/keeper/relay.go",
+      "x/nft/keeper/denom.go",
+      "x/nft/keeper/msg_server.go",
+      "x/supply/keeper/keeper.go",
+      "x/tieredrewards/keeper/abci.go",
+      "x/tieredrewards/keeper/bonus_rewards.go",
+      "x/tieredrewards/keeper/claim_rewards.go",
+      "x/tieredrewards/keeper/delegation.go",
+      "x/tieredrewards/keeper/force_exit.go",
+      "x/tieredrewards/keeper/gov_tally.go",
+      "x/tieredrewards/keeper/hooks.go",
+      "x/tieredrewards/keeper/migrations.go",
+      "x/tieredrewards/keeper/msg_server.go",
+      "x/tieredrewards/keeper/msg_server_auth.go",
+      "x/tieredrewards/keeper/position_state.go",
+      "x/tieredrewards/keeper/redelegation_mapping.go",
+      "x/tieredrewards/keeper/slash.go",
+      "x/tieredrewards/types/msgs.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "A tier position's rewards cannot be claimed twice (duplicate position IDs or stale copies)",
+        "method": "source",
+        "result": "Holds. MsgClaimTierRewards.Validate() (types/msgs.go) rejects duplicate IDs and the handler calls Validate() first; each position claimed once per tx; checkpoints persisted via setPosition after each claim; base rewards zero on second WithdrawDelegationRewards.",
+        "reviewed_paths": [
+          "x/tieredrewards/types/msgs.go",
+          "x/tieredrewards/keeper/claim_rewards.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Redelegation keeps PositionCountByValidator correct so no bond/unbond event is missed and no bonus is overpaid for unbonded gaps",
+        "method": "source",
+        "result": "Holds (wrong premise killed). SDK BeginRedelegation creates the dst delegation IMMEDIATELY \u2014 verified in the pinned fork crypto-org-chain/cosmos-sdk@v0.53.7-0.20261007140702-74750d6b782e x/staking/keeper/delegation.go:1221/1270 (calls k.Delegate to dst at line 1270) and in v0.54.4 source + msg_server_redelegate_test.go:35-37. TierRedelegate's setPosition re-derives the dst delegation and reindexes src\u2192dst. Counts correct.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/delegation.go",
+          "x/tieredrewards/keeper/redelegation_mapping.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Vesting-owned positions cannot bypass vesting via ExitTierWithDelegation",
+        "method": "source",
+        "result": "Unreachable post-v8. The v2 migration force-exits ALL vesting-owned positions; validateNewPosition rejects vesting owners; no path converts an existing account to vesting. Noted as hardening (H2) only.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/force_exit.go",
+          "x/tieredrewards/keeper/delegation.go",
+          "x/tieredrewards/keeper/migrations.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "An attacker cannot collide an x/nft denom with an IBC voucher class to steal or strand NFTs",
+        "method": "source",
+        "result": "Holds for fund impact. User msgs use strict ValidateDenomID (alphanumeric, no '/'); validateBasicTxMsgs runs in runTx for Finalize mode (fork baseapp.go:848). Front-running denom creation only DoSes that class's receives (MintNFT creator check fails \u2192 ack error \u2192 refund) \u2014 DoS is out of scope. Denom NAME squat noted as hardening (H1).",
+        "reviewed_paths": [
+          "x/nft/keeper/denom.go",
+          "x/nft/keeper/msg_server.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Inflation minting cannot be manipulated to over-mint",
+        "method": "source",
+        "result": "Holds. DecayRate validated 0..1; decayFactor in [0,1] so final rate <= base rate; ApproxRoot(0)=0, no panic at decayRate=1. Minting is SDK mint module DefaultMintFn; only authority (gov) can UpdateParams.",
+        "reviewed_paths": [
+          "x/inflation/keeper/mint.go",
+          "x/inflation/keeper/msg_server.go",
+          "x/inflation/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Bonus rewards cannot be overpaid via shares growth, slash timing, or claiming after exit unlock",
+        "method": "source",
+        "result": "Holds. AddToTierPosition claims BEFORE delegating; TierRedelegate claims BEFORE redelegating; UpdateTier claims tier BEFORE BonusApy change. Slash snapshot uses pre-slash rate: BeforeValidatorSlashed (x/staking/keeper/slash.go:170) runs before RemoveValidatorTokens (verified in fork v0.53.7). computeSegmentBonus caps segmentEnd at ExitUnlockAt; applyBonusAccrualCheckpoint caps accrual at ExitUnlockAt; ClearExit resets accrual to blockTime.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/bonus_rewards.go",
+          "x/tieredrewards/keeper/claim_rewards.go",
+          "x/tieredrewards/keeper/slash.go",
+          "x/tieredrewards/keeper/abci.go",
+          "x/tieredrewards/keeper/hooks.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Governance tally cannot double-count tiered positions; topUpBaseRewards cannot be manipulated for profit",
+        "method": "source",
+        "result": "Holds. Position shares deducted from validator second-pass (DelegatorDeductions). topUp attacker fees raise default reward \u2192 LESS top-up (self-defeating); top-up capped by pool balance + shortfall; pro-rata by power.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/gov_tally.go",
+          "x/tieredrewards/keeper/abci.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "x/supply cannot move funds",
+        "method": "source",
+        "result": "Holds. Query-only module: no msg server, no fund movement.",
+        "reviewed_paths": [
+          "x/supply/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "An NFT cannot be duplicated across chains via IBC transfer",
+        "method": "source",
+        "result": "Holds. Escrow/burn on send, mint/unescrow on receive, refund on ack-error/timeout; replay prevented by IBC sequences; unescrow requires escrow ownership.",
+        "reviewed_paths": [
+          "x/nft-transfer/keeper/relay.go",
+          "x/nft-transfer/keeper/packet.go",
+          "x/nft-transfer/keeper/keeper.go",
+          "x/nft-transfer/ibc_module.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "WithdrawFromTier dust sweep can only sweep the caller's own position",
+        "method": "source",
+        "result": "Holds. delAddr unique per position; only owner sweeps own position's dust.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/claim_rewards.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-chainmain",
+        "artifact": null,
+        "invariant": "Every Msg entrypoint checks authority (privileged) or ownership (user)",
+        "method": "source",
+        "result": "Holds. All msg_server_auth handlers check authority (UpdateParams/AddTier/UpdateTier/DeleteTier); inflation UpdateParams checks authority. All tieredrewards user msgs check IsOwner. Tier BonusApy capped at 100%; TargetBaseRewardsRate capped at 100%. PositionState.Validate enforces checkpoint invariants.",
+        "reviewed_paths": [
+          "x/tieredrewards/keeper/msg_server_auth.go",
+          "x/tieredrewards/keeper/msg_server.go",
+          "x/inflation/keeper/msg_server.go",
+          "x/tieredrewards/keeper/position_state.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "H1: x/nft denom NAME is free-form; issuing a denom with Name=`ibc/<sha256(trace)>` permanently blocks IBC receives of that class (SetDenom HasDenomNm check fails in IssueDenom on receive path \u2192 ack error). DoS only, out of scope.",
+      "H2: ExitTierWithDelegation (user path) does not call alignVestingDelegationTracking (only force-exit does). Currently unreachable (no vesting owners post-v8), but a future relaxation of the vesting-owner ban would re-open early-spend of unvested tokens.",
+      "H3: UpdateTier with a BonusApy change fails entirely if the bonus pool cannot cover one position's pending bonus (claimRewardsAndUpdateTierPositions errors) \u2014 gov APY updates can be blocked until the pool is refilled.",
+      "H4: x/inflation BeginBlocker panics (chain halt) if total supply exceeds MaxSupply \u2014 liveness, out of scope."
+    ],
+    "provenance": "RECONSTRUCTED by the parent coordinator from the hunter's own scratch notes (agents/hunter-chainmain/scratch/notes.md, 14 killed leads + verified-sound list + 4 hardening notes) and its follow-up verification handoff (fork v0.53.7 BeginRedelegation + BeforeValidatorSlashed confirmed). The hunter's structured JSON result did not arrive via handoff; this file restates the hunter's own evidence in the structured format. Disposition covered, zero candidates, per the hunter's own conclusion."
+  },
+  {
+    "coverage_id": "cronos%2Fapp%23ProposalHandler%2BUpgrades%2Be2ee::cronos%2Fapp%2Fproposal.go%23PrepareProposal::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "cronos/app#ProposalHandler+Upgrades+e2ee",
+      "boundary": "cronos/app/proposal.go#PrepareProposal",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "cronos/app#ProposalHandler+Upgrades+e2ee",
+    "boundary": "cronos/app/proposal.go#PrepareProposal",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "app/proposal.go",
+      "app/upgrades.go",
+      "app/unblockable.go",
+      "x/e2ee/keeper/keeper.go",
+      "x/e2ee/keyring/keyring.go",
+      "x/e2ee/module.go",
+      "x/e2ee/client/cli/decrypt.go",
+      "x/e2ee/client/cli/encrypt.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-appcore",
+    "reviewed_paths": [
+      "app/app.go",
+      "app/block_address.go",
+      "app/mempool/encoder_cache.go",
+      "app/mempool/helpers.go",
+      "app/proposal.go",
+      "app/unblockable.go",
+      "app/unblockable_test.go",
+      "app/upgrades.go",
+      "app/upgrades_test.go",
+      "proto/e2ee/tx.proto",
+      "x/cronos/keeper/msg_server.go",
+      "x/e2ee/client/cli/decrypt.go",
+      "x/e2ee/client/cli/encrypt.go",
+      "x/e2ee/client/cli/encrypt_to_validators.go",
+      "x/e2ee/client/cli/generate.go",
+      "x/e2ee/client/cli/pubkey.go",
+      "x/e2ee/keeper/keeper.go",
+      "x/e2ee/keeper/keeper_test.go",
+      "x/e2ee/keyring/keyring.go",
+      "x/e2ee/types/msg.go",
+      "x/e2ee/types/tx.pb.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "MsgRegisterEncryptionKey can only register/overwrite the key of the signing address (no third-party key overwrite)",
+        "method": "source",
+        "result": "Signer-bound: proto/e2ee/tx.proto declares option (cosmos.msg.v1.signer) = \"address\", and the compiled descriptor in x/e2ee/types/tx.pb.go was gunzipped and parsed to confirm MessageOptions extension field 11110000 = \"address\". The pinned SDK fork (crypto-org-chain/cosmos-sdk v0.54.4-0.20260806150823-1e7193afaaf8, types/tx/types.go:100 Tx.GetSigners) derives required signers from that annotation via cdc.GetMsgAnySigners, so the ante handler requires the address owner's signature. Keeper's lack of an in-handler signer check is therefore not exploitable.",
+        "reviewed_paths": [
+          "x/e2ee/keeper/keeper.go",
+          "x/e2ee/types/msg.go",
+          "proto/e2ee/tx.proto",
+          "x/e2ee/types/tx.pb.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "ProcessProposal replacement cannot let invalid/fee-bypassing/double-spending txs execute",
+        "method": "source",
+        "result": "app.go:573 replaces the default ProcessProposal with the blocklist-only handler (proposal.go:339-356), so a proposer (a validator, a privileged principal) can include invalid txs and every validator ACCEPTs the proposal. No fund impact: FinalizeBlock re-runs the full ante handler (signature, nonce, fee, gas) for every tx, so invalid txs fail with no state change; duplicate txs fail the nonce check. Worst case is block-space waste (DoS, out of scope). Deterministic across validators, no consensus split.",
+        "reviewed_paths": [
+          "app/proposal.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "EVM From-field spoofing cannot bypass the blocklist signer check",
+        "method": "source",
+        "result": "ValidateTransaction trusts sigTx.GetSigners(); for MsgEthereumTx the signer annotation is \"from\" (ethermint proto), i.e. the attacker-controlled From field, not the signature-recovered sender. Bypass is dead: the ethermint ante handler's VerifyEthSig (ante/sigverify.go:51) calls GetVerifiedSender, which recovers the sender from V,R,S and requires msg.From == recovered; Cronos wires the standard ethermint ante handler (app.go:1273), so a spoofed-From tx passes the blocklist but fails at FinalizeBlock and never executes.",
+        "reviewed_paths": [
+          "app/proposal.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "PrepareProposal fast path (CacheProposalTxVerifier) cannot propose a wrong or unvalidated tx that executes",
+        "method": "source",
+        "result": "CacheProposalTxVerifier.PrepareProposalVerifyTx only encodes via EncoderCache and skips the ante re-run, trusting admission-time ante (InsertTxHandler runs ante via RunTx execModeCheck). Stale txs proposed this way fail at FinalizeBlock (ante + nonce re-run), so no double-spend or fee bypass. EncoderCache is keyed by tx object identity (map[sdk.Tx]) with sha256 used only for hashing; no cross-tx confusion. ExtTxSelector gas accounting is overflow-safe by induction and the baseFee gate is conservative (integer-division floor).",
+        "reviewed_paths": [
+          "app/proposal.go",
+          "app/mempool/helpers.go",
+          "app/mempool/encoder_cache.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "Upgrade handler is reachable only via governance and its migrations cannot corrupt balances/permissions",
+        "method": "source",
+        "result": "Only handler is plan \"v1.8\", triggered via x/upgrade governance (privileged, out of scope); no low-privilege trigger exists. Steps are RunMigrations, PopulateQueuePendingSlots (idempotent SDK util), pruneStaleIBCConsensusStateSubkeys (deletes only keys with >=5 '/'-segments, parts[2]==consensusStates, last==clientState; canonical 3-/4-segment keys survive, covered by TestPruneStaleIBCConsensusStateSubkeys), and SetParams CroBridgeContractAddresses (hardcoded non-zero addrs validated at registration; closes the unauthenticated CroBridge drain). No balance/permission corruption path.",
+        "reviewed_paths": [
+          "app/upgrades.go",
+          "app/upgrades_test.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "Unblockable list cannot be abused by an attacker to evade the blocklist",
+        "method": "source",
+        "result": "28 hardcoded EVM addresses (raw 20-byte matching, case-insensitive) are filtered out of both blocklist maps (SetBlockList and the ante blockedMap construction). The list is not configurable and there is no code path by which an attacker can add an address. Intentional policy carve-out; no fund impact. Two entries are marked test addresses (cosmetic).",
+        "reviewed_paths": [
+          "app/unblockable.go",
+          "app/proposal.go",
+          "app/app.go",
+          "app/unblockable_test.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": "agents/hunter-appcore/artifacts/e2ee-keeper-test.log",
+        "invariant": "Keys query batch cannot be abused for unbounded reads (regression check for #2172)",
+        "method": "local",
+        "result": "Keys rejects batches > MaxKeysAddresses (10000) with InvalidArgument; Key/Keys return public keys by design. Existing suite passes: go test ./x/e2ee/keeper/ -count=1 => ok (3.962s), covering the cap boundary (rejects 10001, accepts 10000) and registered-key round-trip. No length cap on the Key value itself, but it is bounded by max tx size; state bloat at most (DoS, out of scope).",
+        "reviewed_paths": [
+          "x/e2ee/keeper/keeper.go",
+          "x/e2ee/keeper/keeper_test.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "Blocklist blob can only be written by the admin and decryption failure fails closed",
+        "method": "source",
+        "result": "Blob is written only by MsgStoreBlockList, gated on CronosAdmin in the msg server (msg_server.go:121) and again in the CheckTx ante decorator (block_address.go:76-83). SetBlockList retries decryption on failure instead of caching the blob (#2176); on failure EndBlocker logs and keeps the old blocklist, startup panics unless the unsafe flag is set. noneIdentity (missing/invalid validator identity) fails closed. No attacker path to the blob or to validator keys.",
+        "reviewed_paths": [
+          "app/proposal.go",
+          "app/app.go",
+          "x/cronos/keeper/msg_server.go",
+          "app/block_address.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "e2ee private identities are generated/stored locally and never exposed on-chain or via queries",
+        "method": "source",
+        "result": "Identities are age X25519 keys generated client-side (crypto/rand via age.GenerateX25519Identity) and stored in the local keyring (file/OS/pass backends; test backend uses fixed password \"test\" by design). Only the public recipient string is registered on-chain. No path in the module reads another principal's identity; decrypt uses only locally held identities.",
+        "reviewed_paths": [
+          "x/e2ee/keyring/keyring.go",
+          "x/e2ee/client/cli/decrypt.go",
+          "x/e2ee/client/cli/generate.go",
+          "x/e2ee/client/cli/pubkey.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-appcore",
+        "artifact": null,
+        "invariant": "Encrypt paths do not let an attacker decrypt others' txs or inject plaintext into the blocklist flow",
+        "method": "source",
+        "result": "encrypt.go fails closed on empty/unparseable recipient keys (ParseX25519Recipient errors before Encrypt). encrypt_to_validators.go has a real defect: a missing/invalid key for any bonded validator leaves a nil Recipient and age.Encrypt panics (verified standalone: \"PANIC CONFIRMED: runtime error: invalid memory address or nil pointer dereference\"). Impact is a crash of the operator's local CLI (blocklist cannot be produced while any bonded validator lacks a key) \u2014 no on-chain or fund impact, no remote trigger; recorded as hardening H1, not a candidate.",
+        "reviewed_paths": [
+          "x/e2ee/client/cli/encrypt.go",
+          "x/e2ee/client/cli/encrypt_to_validators.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "H1 (verified defect, operator CLI only): x/e2ee/client/cli/encrypt_to_validators.go leaves recipients[i] nil when a bonded validator has no registered key or an invalid key, and age.Encrypt panics on a nil Recipient (confirmed with a standalone program against filippo.io/age v1.3.1: nil pointer dereference in wrapWithLabels -> r.Wrap). The blocklist publisher's tool crashes instead of skipping that validator, so no blocklist update can be produced while any bonded validator lacks a key. Fix: build the recipient list with append, including only successfully parsed recipients (encrypt.go already fails closed this way). No on-chain or fund impact.",
+      "H2: Blocklist checks cover tx signers plus EVM top-level destinations and EIP-7702 authorization addresses only. Cosmos-msg recipients (e.g. bank MsgSend to a blocked address), IBC-transfer recipients, the authz granter inside MsgExec (pre-existing grants remain usable after the granter is blocked), and fee granters are not checked, so a blocked address can still receive funds via Cosmos msgs and act through pre-existing authz grants. Compliance-bypass class, not theft.",
+      "H3: EVM internal calls are not blocklist-checked: an unblocked user can call a contract that forwards funds to a blocked address. Same compliance class as H2.",
+      "H4: A validator whose e2ee identity is missing or invalid (noneIdentity) fails to start once a blocklist blob exists on-chain (RefreshBlockList panics at startup unless --unsafe-ignore-block-list-failure is set). Fail-closed by design, but an operational footgun; consider logging and continuing with an empty blocklist at startup like EndBlocker does."
+    ],
+    "dispositioned_unresolved": [
+      {
+        "item": "App-package test run (TestExtTxSelector/TestCacheProposalTxVerifier/TestSetBlockListRetriesAfterFailure/TestPruneStaleIBCConsensusStateSubkeys/TestIsUnblockable/TestBuildUnblockableSet/TestProtoSizeForTx) was killed after ~15 min still compiling the app test binary under heavy contention from concurrent agents; not needed for the verdict (no candidates; all checks source-grounded; e2ee keeper suite passed).",
+        "disposition": "test-infrastructure limitation, not a coverage gap: all verdict-relevant checks are source-grounded and complete; the e2ee keeper suite passed (artifact promoted by parent); no candidate exists so no PoC is owed"
+      }
+    ]
+  },
+  {
+    "coverage_id": "cronos%2Fapp%2Fmempool%23CheckTx%2FInsertTx%2FReapTxs::cronos%2Fapp%2Fapp.go%23NewFinalizeNeutralMempool::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "cronos/app/mempool#CheckTx/InsertTx/ReapTxs",
+      "boundary": "cronos/app/app.go#NewFinalizeNeutralMempool",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "cronos/app/mempool#CheckTx/InsertTx/ReapTxs",
+    "boundary": "cronos/app/app.go#NewFinalizeNeutralMempool",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "app/mempool/decoder_cache.go",
+      "app/mempool/encoder_cache.go",
+      "app/mempool/finalize_pool.go",
+      "app/mempool/manager.go",
+      "app/mempool/reap.go",
+      "app/mempool/recover.go",
+      "app/mempool/signer.go",
+      "app/app.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-mempool",
+    "reviewed_paths": [
+      "app/app.go",
+      "app/mempool/decoder_cache.go",
+      "app/mempool/encoder_cache.go",
+      "app/mempool/finalize_pool.go",
+      "app/mempool/gossip.go",
+      "app/mempool/helpers.go",
+      "app/mempool/manager.go",
+      "app/mempool/pending_cache.go",
+      "app/mempool/preverify.go",
+      "app/mempool/reap.go",
+      "app/mempool/recheck_worker.go",
+      "app/mempool/recover.go",
+      "app/mempool/signer.go",
+      "app/proposal.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "Every pooled tx passed CheckTx ante (no pool entry without sig/nonce/fee validation)",
+        "method": "source",
+        "result": "Holds. No direct Insert callers exist in cronos code; the only insertion is SDK runTx(ExecModeCheck) inside Manager.admit/CheckTxHandler, which inserts only after ante succeeds and fails CheckTx (without committing ante state) on insert error. Verified against pinned SDK cosmos-sdk@v0.54.4-0.20260806150823-1e7193afaaf8 baseapp/baseapp.go:928.",
+        "reviewed_paths": [
+          "app/mempool/manager.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "A block tx result never depends on local mempool removal outcome (no consensus split via pool state)",
+        "method": "source",
+        "result": "Holds in v1.8.2 (#2254 IS in the release, contrary to brief). FinalizeNeutralMempool.RemoveWithReason swallows all non-ErrTxNotFound errors and recovers panics for CallerRunTxFinalize. The only other SDK RemoveWithReason sites are ReCheck (error joined, manager evicts) and PrepareProposal invalid-tx removal (proposer-local).",
+        "reviewed_paths": [
+          "app/mempool/finalize_pool.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "One tx's decode can never be returned for another tx's bytes (decoder-cache poisoning)",
+        "method": "source",
+        "result": "Holds. cacheShard.get/set compare full raw bytes (bytes.Equal); xxhash is only a shard/index key. The real sharing hazard is mutation of the shared sdk.Tx object, which is exactly #2251 (already fixed on main, 39c7cf03) and is liveness/panic-class: a corrupted sign-doc or signer can only make verification fail, never pass for a wrong signer, since all semantic fields are signature-covered.",
+        "reviewed_paths": [
+          "app/mempool/decoder_cache.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "Pool keying and manager/proposal signer extraction agree, so no tx escapes recheck or nonce ordering via signer confusion (PubKeyIgnore vs PubKeyRequire)",
+        "method": "source",
+        "result": "Holds. Both adapters are Eth-wrapped Msg adapters: EVM txs key by first-msg From+nonce, cosmos txs by all msg signers, in both. The policies differ only in the no-pubkey error case; no-pubkey txs are rejected at admission (transitional #2254 behaviour) and Finalize removal of foreign no-pubkey block txs is neutralised.",
+        "reviewed_paths": [
+          "app/mempool/signer.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "Encoder-cache bytes proposed for a tx are the bytes that passed admission (no stale/mutated re-encode swapping in a different tx)",
+        "method": "source",
+        "result": "Holds for all reachable paths. Key is the sdk.Tx pointer; same pointer implies same raw bytes while decode-cached. Known shared-tx mutations are semantics-preserving (EIP-712 fee-payer V 27/28->0/1 normalisation; amino-JSON side caches not serialised). The one serialised mutation (legacy Data-format MsgEthereumTx AsTransaction filling msg.Raw) is unreachable for pooled txs: MsgEthereumTx.ValidateBasic rejects Data != nil and SDK runTx calls validateBasicTxMsgs before ante in all modes. Finalize re-decodes block bytes and re-runs full ante regardless.",
+        "reviewed_paths": [
+          "app/mempool/encoder_cache.go",
+          "app/mempool/manager.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "A spent/failed/stale tx cannot be reproposed and execute a second time (double-spend via recheck/reap)",
+        "method": "source",
+        "result": "Holds. Recheck staging preserves work across panics (restoreStaging; capRecheckTxs front-loads deferred carry). Any stale tx reproposed before recheck completes (incl. the 500ms WaitForRecheckTimedOut window and mempool.recheck=false) fails Finalize ante on nonce, which is consumed by the first execution. No double execution is reachable through mempool code.",
+        "reviewed_paths": [
+          "app/mempool/manager.go",
+          "app/proposal.go",
+          "app/app.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "Ante-cache eviction uses the same key the ante handler sets, so eviction cannot leave a phantom (sender,nonce) that skips nonce verification for a wrong-nonce tx",
+        "method": "source",
+        "result": "Holds. Manager.evictAnteCache deletes (bech32 from.String(), nonce), matching ethermint ante/eth.go CheckAndSetEthSenderNonce Set/Exists keys. The CheckTx nonce-skip on cache hit can only admit txs valid against deliverState; Finalize never skips nonce verification (skip is CheckTx-only, non-recheck). Multi-msg txs sharing one slot fail closed (over-rejection).",
+        "reviewed_paths": [
+          "app/mempool/manager.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "PrepareProposal fast path (CacheProposalTxVerifier, skips ante re-run) cannot propose a fee-bypassing or unvalidated tx",
+        "method": "source",
+        "result": "Holds by construction: the verifier trusts pool membership, which requires CheckTx ante (check 1), and Finalize re-runs ante on block bytes. The baseFee gate is conservative (fee Quo gas truncates down; gas==0 guarded). TxReplacement overflow needs priority > ~8.3e16, requiring paying that fee/gas \u2014 economically infeasible (7-Question Gate Q6 kill).",
+        "reviewed_paths": [
+          "app/proposal.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-mempool",
+        "artifact": null,
+        "invariant": "No other admission/recheck/reap path admits, retains, or proposes a tx that bypasses ante, sig verification, or fee checks",
+        "method": "source",
+        "result": "Holds. CheckTxHandler skipping preVerify is perf-only (full ante still runs in runTx). dummyCheckTx bypasses ante at CheckTx only, is an operator-only unsafe flag, and Finalize still validates. Gossip dedup (sha256 of canonical bytes), reap caps, pending-cache staleness, and recheck worker gating affect ordering/liveness only. Panic recovery (#2244, in v1.8.2) covers admit/CheckTx/reap/recheck paths.",
+        "reviewed_paths": [
+          "app/mempool/manager.go",
+          "app/mempool/recheck_worker.go",
+          "app/mempool/reap.go",
+          "app/mempool/gossip.go",
+          "app/mempool/pending_cache.go",
+          "app/mempool/recover.go",
+          "app/mempool/helpers.go",
+          "app/mempool/preverify.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "EncoderCache.Set stores the caller's slice without copying when decodeAndEncode falls back to raw bytes on encode error; Get copies on read, so only the original ABCI buffer owner could corrupt a cached entry (no known mutator). A defensive copy in Set would close it.",
+      "SDK DefaultProposalHandler fails the whole PrepareProposal if the signer adapter errors on any pooled tx; a pooled tx whose signer extraction starts failing (e.g. via shared-tx mutation) turns into a failed/empty proposal round. Liveness only.",
+      "Legacy Data-format eth txs reach preVerify VerifyEthSig -> AsTransaction and mutate the shared decode-cache object before runTx rejects them via ValidateBasic. Harmless today (still rejected); same #2251 class.",
+      "Premise correction for the run record: #2244 (5ab71b9a) and #2254 (b6c2a826) ARE in v1.8.2, not post-release; only #2251 (decode-cache data race, 39c7cf03) and #2216 (Commit priority/RPC cap, 8d2cb65b) are genuinely post-v1.8.2. Both are already-fixed/not-reportable per the brief, and both are liveness/DoS-class anyway. The v1.8.1..v1.8.2 diff (+1344/-148) is essentially #2244+#2254, not a mempool rewrite.",
+      "Working notes: ~/workspace/security-audits/cronos-blockchain-protocols/run-1/agents/hunter-mempool/scratch/notes.md"
+    ],
+    "dispositioned_unresolved": [
+      {
+        "item": "go test ./app/mempool/ could not complete in this session (module downloads took ~6h; test-binary build still compiling after ~12 min on the 1.5-CPU VM alongside sibling agents' builds, then stopped to free CPU). No candidate exists, so no PoC is owed; this does not block any finding.",
+        "disposition": "test-infrastructure limitation, not a coverage gap: all 9 checks are source checks and complete; no candidate exists so no PoC is owed"
+      }
+    ]
+  },
+  {
+    "coverage_id": "cronos%2Fx%2Fcronos%2Fkeeper%23EVMHooks%2BIBCSend::cronos%2Fx%2Fcronos%2Fkeeper%2Fevm_hooks.go%23EvmHooks::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "cronos/x/cronos/keeper#EVMHooks+IBCSend",
+      "boundary": "cronos/x/cronos/keeper/evm_hooks.go#EvmHooks",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "cronos/x/cronos/keeper#EVMHooks+IBCSend",
+    "boundary": "cronos/x/cronos/keeper/evm_hooks.go#EvmHooks",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "x/cronos/keeper/evm_hooks.go",
+      "x/cronos/keeper/evmhandlers/send_to_ibc.go",
+      "x/cronos/keeper/evmhandlers/send_to_ibc_v2.go",
+      "x/cronos/keeper/evmhandlers/send_cro_to_ibc.go",
+      "x/cronos/keeper/evmhandlers/send_to_account.go",
+      "x/cronos/keeper/ibc.go",
+      "x/cronos/keeper/msg_server.go",
+      "x/cronos/keeper/keeper.go",
+      "x/cronos/middleware/conversion_middleware.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "PROTOCOLS-RPC-AND-MESSAGING.md#Core discipline"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-evmibc",
+    "reviewed_paths": [
+      "contracts/src/ModuleCRC20.sol",
+      "contracts/src/ModuleCRC21.sol",
+      "proto/cronos/tx.proto",
+      "x/cronos/keeper/evm.go",
+      "x/cronos/keeper/evm_hooks.go",
+      "x/cronos/keeper/evmhandlers/send_cro_to_ibc.go",
+      "x/cronos/keeper/evmhandlers/send_to_account.go",
+      "x/cronos/keeper/evmhandlers/send_to_ibc.go",
+      "x/cronos/keeper/evmhandlers/send_to_ibc_v2.go",
+      "x/cronos/keeper/ibc.go",
+      "x/cronos/keeper/keeper.go",
+      "x/cronos/keeper/msg_server.go",
+      "x/cronos/keeper/params.go",
+      "x/cronos/keeper/permissions.go",
+      "x/cronos/middleware/conversion_middleware.go",
+      "x/cronos/types/messages.go",
+      "x/cronos/types/params.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "Every handler mint/release of native coins is backed 1:1 by an EVM-side burn/lock in the same tx",
+        "method": "source",
+        "result": "Holds. ModuleCRC21.send_to_ibc burns (non-source) or transferFrom-to-module (source) before emitting __CronosSendToIbc; ModuleCRC20.send_to_ibc unsafe_burns first. Handlers only act on logs from the mapped contract (GetDenomByContract, cross-checked against current mapping).",
+        "reviewed_paths": [
+          "x/cronos/keeper/evm_hooks.go",
+          "x/cronos/keeper/evmhandlers/send_to_ibc.go",
+          "x/cronos/keeper/evmhandlers/send_to_ibc_v2.go",
+          "x/cronos/keeper/evmhandlers/send_to_account.go",
+          "x/cronos/keeper/evmhandlers/send_cro_to_ibc.go",
+          "contracts/src/ModuleCRC21.sol",
+          "contracts/src/ModuleCRC20.sol"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "Hook failure cannot strand funds (burned EVM tokens without IBC release, or minted native coins without IBC send)",
+        "method": "source",
+        "result": "Holds. Ethermint state_transition.go runs PostTxProcessing on a tmpCtx and commits only on success; a hook error reverts the whole tx including the EVM burn.",
+        "reviewed_paths": [
+          "x/cronos/keeper/evm_hooks.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "Decimal conversion between 8-dec IBC CRO and 18-dec EVM CRO is exact in both directions with no rounding theft",
+        "method": "source",
+        "result": "Holds. Convert uses SafeMul by 1e10 (overflow errors); IBC send burns amount - amount%1e10 and pays out amount/1e10, so the dust remainder stays with the user (confirmed by existing TestSendCroToIbcHandler: 500 dust remains).",
+        "reviewed_paths": [
+          "x/cronos/keeper/ibc.go",
+          "x/cronos/keeper/evm.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "Zero/negative log amounts cannot panic the hook or mint from nothing",
+        "method": "source",
+        "result": "Holds. Amounts are uint256 (never negative). Zero amounts reach sdk.NewCoins, which in the pinned SDK fork (crypto-org-chain/cosmos-sdk v0.54.4-0.20260806150823, types/coin.go, verified in module cache) strips zero coins via sanitizeCoins/removeZeroCoins, so a zero-amount log is a harmless no-op, not a panic.",
+        "reviewed_paths": [
+          "x/cronos/keeper/evmhandlers/send_to_ibc.go",
+          "x/cronos/keeper/evmhandlers/send_to_account.go",
+          "x/cronos/keeper/evmhandlers/send_cro_to_ibc.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "Every Msg entrypoint binds the affected funds to its signer; privileged Msgs check authority consistently",
+        "method": "source",
+        "result": "Holds. Proto signer annotations bind ConvertVouchers=address, TransferTokens=from, UpdateTokenMapping=sender, UpdateParams=authority, UpdatePermissions/StoreBlockList=from. UpdateTokenMapping checks CanChangeTokenMapping; UpdatePermissions/StoreBlockList require CronosAdmin; UpdateParams requires gov authority. No sibling missing its check; no attacker path to self-map a contract.",
+        "reviewed_paths": [
+          "x/cronos/keeper/msg_server.go",
+          "x/cronos/types/messages.go",
+          "proto/cronos/tx.proto",
+          "x/cronos/keeper/permissions.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "IBC recv/ack/timeout auto-conversion cannot double-convert, double-refund, or convert funds that were never received",
+        "method": "source",
+        "result": "Holds. OnRecvPacket runs underlying transfer + conversion in a CacheContext committed only on full success; conversion failure yields an error ack and discards the transfer. OnAck/OnTimeout convert via OnRecvVouchers (own CacheContext); conversion failure is logged and the refunded vouchers stay with the sender. ibc-go processes each ack/timeout once.",
+        "reviewed_paths": [
+          "x/cronos/middleware/conversion_middleware.go",
+          "x/cronos/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "IBC send path validates channel/denom and cannot overflow the packet timeout",
+        "method": "source",
+        "result": "Holds. Source coins require a valid channel id; vouchers derive the channel from a real denom trace (GetSourceChannelID fails on fake ibc/ denoms); IbcTimeout is validated <= 30 days so timeoutTimestamp cannot wrap.",
+        "reviewed_paths": [
+          "x/cronos/keeper/ibc.go",
+          "x/cronos/types/params.go",
+          "x/cronos/keeper/params.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "No hook reentrancy or log replay: one log cannot trigger the bridge twice or re-enter mid-flight",
+        "method": "source",
+        "result": "Holds. Handlers perform bank/IBC ops only (no EVM calls); PostTxProcessing iterates a range snapshot of receipt logs so appended logs are not re-processed; each bridge log requires a fresh EVM tx that burns/locks again.",
+        "reviewed_paths": [
+          "x/cronos/keeper/evm_hooks.go",
+          "x/cronos/keeper/evmhandlers/send_to_ibc.go",
+          "x/cronos/keeper/evmhandlers/send_to_ibc_v2.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmibc",
+        "artifact": null,
+        "invariant": "ConvertCoinFromCRC21ToNative burn-after-send ordering cannot be exploited by a caller that ignores errors",
+        "method": "source",
+        "result": "Unreachable: the function has no production callers (dead code in v1.8.2). Its send-then-burn ordering for non-source denoms is therefore not exploitable; noted as hardening only.",
+        "reviewed_paths": [
+          "x/cronos/keeper/evm.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "Zero-amount bridge logs (e.g. CRC21 send_to_ibc with amount 0) currently succeed as silent no-ops via sdk.NewCoins zero-stripping; consider an explicit amount > 0 guard in the four EVM handlers for clearer failure semantics.",
+      "ModuleCRC21.transfer_from_cronos_module has no explicit only-module check and relies on DSToken transferFrom allowance semantics (module never approves anyone); add the require(msg.sender == module_address) check to match its sibling module functions so the invariant does not depend on no future approve path.",
+      "ConvertCoinFromCRC21ToNative (x/cronos/keeper/evm.go) has no production callers; either remove it or fix its non-source ordering (burn before send) before any future caller is added.",
+      "Informational: the module's IBC CRO escrow is funded only by ConvertVouchers deposits, while basecro from genesis/inflation is unbacked; unbacked basecro can drain the escrow at the 1:1 peg (fair value, no attacker profit), leaving later converters unable to convert back until escrow refills. This is the intended peg design, not a payable finding."
+    ]
+  },
+  {
+    "coverage_id": "cronos%2Fx%2Fcronos%2Fkeeper%2Fprecompiles%23Bank%2BICA%2BRelayer::cronos%2Fx%2Fcronos%2Fkeeper%2Fprecompiles%2Fbase_contract.go%23BaseContract::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "cronos/x/cronos/keeper/precompiles#Bank+ICA+Relayer",
+      "boundary": "cronos/x/cronos/keeper/precompiles/base_contract.go#BaseContract",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "cronos/x/cronos/keeper/precompiles#Bank+ICA+Relayer",
+    "boundary": "cronos/x/cronos/keeper/precompiles/base_contract.go#BaseContract",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "x/cronos/keeper/precompiles/bank.go",
+      "x/cronos/keeper/precompiles/ica.go",
+      "x/cronos/keeper/precompiles/relayer.go",
+      "x/cronos/keeper/precompiles/base_contract.go",
+      "x/cronos/keeper/precompiles/interface.go",
+      "x/cronos/keeper/precompiles/utils.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-precompiles",
+    "reviewed_paths": [
+      "CHANGELOG.md",
+      "app/app.go",
+      "integration_tests/test_bank_precompiles.py",
+      "integration_tests/test_ica_precompile.py",
+      "x/cronos/keeper/keeper.go",
+      "x/cronos/keeper/precompiles/bank.go",
+      "x/cronos/keeper/precompiles/ica.go",
+      "x/cronos/keeper/precompiles/interface.go",
+      "x/cronos/keeper/precompiles/relayer.go",
+      "x/cronos/keeper/precompiles/utils.go",
+      "x/cronos/module.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "The bank/ICA/relayer precompiles are reachable by an EVM caller in v1.8.2",
+        "method": "source",
+        "result": "FALSE \u2014 all three are dead code. app/app.go:807 passes an empty []evmkeeper.CustomContractFn{} to evmkeeper.NewKeeper; repo-wide grep finds zero call sites for NewBankContract/NewIcaContract/NewRelayerContract (only their definitions); no setter/add path exists (only unrelated EvmKeeper.SetHooks; module.go has no EVM keeper use). Git history: bank registration removed 2023-10-05 (a31a35d7, #1196 'bank precompile is not ready to release'); relayer+ICA removed 2026-03-13 (6d9579f2, #1986 'remove unused precompiles'). Corroborated by CHANGELOG (#1986, #1845) and module-level pytest.skip in both precompile integration tests ('skipping bank precompile tests', 'ica is not enabled'). Calls to 0x64/0x65/0x66 hit empty accounts. Q1 of the 7-Question Gate fails for every hypothetical precompile bug, so no candidate survives.",
+        "reviewed_paths": [
+          "app/app.go",
+          "x/cronos/keeper/precompiles/bank.go",
+          "x/cronos/keeper/precompiles/ica.go",
+          "x/cronos/keeper/precompiles/relayer.go",
+          "x/cronos/module.go",
+          "CHANGELOG.md",
+          "integration_tests/test_bank_precompiles.py",
+          "integration_tests/test_ica_precompile.py"
+        ]
+      },
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "An EVM caller cannot mint/burn/transfer Cosmos bank funds belonging to another issuer or user",
+        "method": "source",
+        "result": "Holds in the (dead) code: mint/burn/transfer all derive the denom as evm/<contract.Caller()>, so a caller can only move its own issuer denom (Evmos-style issuer semantics). transfer's arbitrary sender arg is confined by the same denom binding. Amount > 0 enforced in all three state-changing methods; checkBlockedAddr applied to recipients. No cross-issuer theft path. Caveat: the DELEGATECALL semantics of contract.Caller() in the pinned go-ethereum fork could not be source-checked (module cache not yet downloaded); moot while unregistered, must be re-checked before any re-enable.",
+        "reviewed_paths": [
+          "x/cronos/keeper/precompiles/bank.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "An EVM caller cannot register or submit ICA transactions for an ICA account owned by someone else",
+        "method": "source",
+        "result": "Holds in the (dead) code: registerAccount and submitMsgs bind owner = sdk.AccAddress(contract.Caller()) with no caller-supplied owner override; queryAccount takes an arbitrary account arg but is read-only; submitMsgs memo binds src_callback to the caller. Adjacent live callback keeper.go onPacketResult requires packetSenderAddress == contractAddress and executes the callback via CallEVM from the EVM module address capped at MaxCallbackGas. Provenance of the two compared params (upstream ibc-go ibccallbacks middleware) not verified \u2014 see unresolved.",
+        "reviewed_paths": [
+          "x/cronos/keeper/precompiles/ica.go",
+          "x/cronos/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "An EVM caller cannot submit IBC messages authenticated as another signer or spend another party's funds via the relayer precompile",
+        "method": "source",
+        "result": "Holds in the (dead) code: exec() requires exactly one msg signer and signer == contract.Caller(). RegisterPayee/RegisterCounterpartyPayee/SubmitMisbehaviour have constants and gas-table entries but are NOT dispatched in Run's switch (unknown method). IBC effects reachable (RecvPacket/Timeout/Acknowledgement) pay the packet sender per packet data, not the signer, so no signer-confusion fund path exists even if re-enabled.",
+        "reviewed_paths": [
+          "x/cronos/keeper/precompiles/relayer.go",
+          "x/cronos/keeper/precompiles/utils.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "An attacker cannot shadow or collide with a precompile address (100/101/102)",
+        "method": "source",
+        "result": "No precompile is registered at 100/101/102, so there is nothing to shadow; deploying a contract at a chosen 20-byte low address via CREATE/CREATE2 is computationally infeasible. keeper.go ensureContractCode (line ~315) additionally rejects CRC21 token-mapping registrations for addresses < 256 ('crc21 contract must not be in precompile range', CHANGELOG #2030), so the mapping path cannot plant code at a precompile address.",
+        "reviewed_paths": [
+          "app/app.go",
+          "x/cronos/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-precompiles",
+        "artifact": null,
+        "invariant": "Precompile entry points validate input length and cannot panic on short input; no reentrancy across the precompile/EVM boundary",
+        "method": "source",
+        "result": "Partially fails as a robustness matter, no fund impact: bank.go RequiredGas and Run slice input[:4]/contract.Input[:4] with NO length guard (panic on <4-byte input), while ica.go:129 and relayer.go:236 guard with len < 4. A panic would be tx-level only (baseapp recovers) = DoS-only, out of scope, and the code is dead. No reentrancy surface: precompiles call only Cosmos keepers via ExecuteNativeAction and never call back into the EVM. Gas is fixed per-method plus a per-byte base cost.",
+        "reviewed_paths": [
+          "x/cronos/keeper/precompiles/bank.go",
+          "x/cronos/keeper/precompiles/ica.go",
+          "x/cronos/keeper/precompiles/relayer.go",
+          "x/cronos/keeper/precompiles/interface.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "bank.go: add a len(input) < 4 guard to BankContract.RequiredGas and BankContract.Run (matching ica.go:129 and relayer.go:236) so a short precompile call returns an error instead of panicking \u2014 do this before any re-enable.",
+      "If the precompiles are ever re-registered, re-audit the contract.Caller() binding under DELEGATECALL/CALLCODE in the pinned go-ethereum fork first: the bank denom binding, ICA owner binding, and relayer signer check all assume Caller() is the immediate EVM caller.",
+      "Relayer precompile advertises RegisterPayee/RegisterCounterpartyPayee/SubmitMisbehaviour in its constants and gas table but Run does not dispatch them (unknown method): remove the dead entries or wire them explicitly to avoid a future inconsistent re-enable.",
+      "Consider deleting or clearly marking the unregistered precompile package as dead code so a future re-enable is a deliberate, reviewed act rather than a one-line app.go change that silently revives unaudited authorization logic."
+    ],
+    "dispositioned_unresolved": [
+      {
+        "item": "Provenance of packetSenderAddress and contractAddress passed to keeper.go onPacketResult (supplied by upstream ibc-go ibccallbacks middleware) was not verified: ibc-go was not yet in the module cache during this session. The keeper-side equality check was reviewed; the middleware-side derivation was not. Outside this unit's files (keeper.go + upstream), no fund-impacting consequence identified from the keeper side alone.",
+        "disposition": "out of scope for this run: concerns upstream ibc-go middleware / go-ethereum fork (not in-scope repos) and dead unregistered code; keeper-side check holds; re-check only if precompiles are re-registered"
+      },
+      {
+        "item": "What contract.Caller() returns when a precompile is invoked via DELEGATECALL in the pinned crypto-org-chain/go-ethereum fork (v1.10.20-0.20260521015249-663dca6c618e) was not source-verified (fork not yet in module cache). Relevant only if the precompiles are ever re-registered; while dead it cannot affect the verdict.",
+        "disposition": "out of scope for this run: concerns upstream ibc-go middleware / go-ethereum fork (not in-scope repos) and dead unregistered code; keeper-side check holds; re-check only if precompiles are re-registered"
+      }
+    ]
+  },
+  {
+    "coverage_id": "ethermint%2Fante%2Bx%2Fevm%23EthCheckTxFee::ethermint%2Fevmd%2Fante%23AnteHandler::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "ethermint/ante+x/evm#EthCheckTxFee",
+      "boundary": "ethermint/evmd/ante#AnteHandler",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "ethermint/ante+x/evm#EthCheckTxFee",
+    "boundary": "ethermint/evmd/ante#AnteHandler",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "ante/eth.go",
+      "ante/sigverify.go",
+      "ante/cosmos/eip712.go",
+      "ante/cosmos/authz.go",
+      "ante/cosmos/reject_msgs.go",
+      "ante/cosmos/min_gas_price.go",
+      "ante/cache/antecache.go",
+      "ante/cache/sendercache.go",
+      "ante/evm/fee_checker.go",
+      "ante/evm/nativefee.go",
+      "evmd/ante/ante.go",
+      "evmd/ante/evm_handler.go",
+      "ethereum/eip712/encoding.go",
+      "ethereum/eip712/eip712.go",
+      "x/evm/keeper/msg_server.go",
+      "x/evm/keeper/keeper.go",
+      "x/evm/keeper/gas.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "hunter-ethermint",
+    "reviewed_paths": [
+      "ante/cache/antecache.go",
+      "ante/cache/sendercache.go",
+      "ante/cosmos/authz.go",
+      "ante/cosmos/eip712.go",
+      "ante/cosmos/min_gas_price.go",
+      "ante/cosmos/reject_msgs.go",
+      "ante/eth.go",
+      "ante/evm/fee_checker.go",
+      "ante/evm/nativefee.go",
+      "ante/interfaces/setup.go",
+      "ante/sigverify.go",
+      "appmempool/preverify.go",
+      "crypto/ethsecp256k1/ethsecp256k1.go",
+      "ethereum/eip712/eip712_legacy.go",
+      "ethereum/eip712/encoding.go",
+      "ethereum/eip712/encoding_legacy.go",
+      "evmd/ante/ante.go",
+      "evmd/ante/evm_handler.go",
+      "evmd/ante/handler_options.go",
+      "x/evm/keeper/gas.go",
+      "x/evm/keeper/state_transition.go",
+      "x/evm/keeper/utils.go",
+      "x/evm/types/msg.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": "agents/hunter-ethermint/artifacts/eip712-legacy-test.log",
+        "invariant": "Legacy EIP-712 typed-data schema is derived from msgs[0] only and skips zero-valued fields; fields zero in msgs[0] but set in msgs[1] must not be silently uncommitted (attacker-modifiable without invalidating the signature)",
+        "method": "local",
+        "result": "KILLED \u2014 fail-closed, verified empirically against the pinned geth fork (crypto-org-chain/go-ethereum v1.10.20-0.20260521015249-663dca6c618e): apitypes.EncodeData errors on extra message fields ('there is extra data provided in the message (1 < 2)') and on schema fields missing from the message ('provided data <nil> doesn't match type string'). Any msgs[0]/msgs[1] schema mismatch aborts verification; no uncommitted-field mutation can verify. Corroborated by the repo's own test expecting legacy failure for '2x MsgVoteV1 with Different Schemas'.",
+        "reviewed_paths": [
+          "ethereum/eip712/eip712_legacy.go",
+          "ethereum/eip712/encoding_legacy.go",
+          "ante/cosmos/eip712.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "EIP-712 signing must commit (or reject) unordered, timeout_timestamp, fee payer/granter; eth_secp256k1 sign modes must not allow EIP-712 replay through other modes",
+        "method": "source",
+        "result": "Gaps exist in v0.24.0 (no unordered/payer rejection in decode paths; no sign-mode restriction) but they EXACTLY match upstream fix commit 05e49089 (#1153, 13 Nov 2026) \u2014 already known/fixed in main, not re-reported. Additionally the unordered leg is dead on the deployed chain: neither Cronos v1.8.2 nor evmd enables unordered txs (AccountKeeper enableUnorderedTxs defaults false; no WithUnorderedTransactions anywhere), so the SDK rejects any unordered tx at SigVerification/IncrementSequence decorators.",
+        "reviewed_paths": [
+          "ethereum/eip712/encoding.go",
+          "ethereum/eip712/encoding_legacy.go",
+          "ante/cosmos/eip712.go",
+          "evmd/ante/ante.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "authInfo.Tip is not committed by EIP-712 typed data and is not rejected by #1153 \u2014 can an attacker add a tip to a victim's signed tx to drain funds?",
+        "method": "source",
+        "result": "KILLED \u2014 the SDK fork's DeductFeeDecorator (crypto-org-chain/cosmos-sdk v0.50.6-0.20260601063535-2cd50b219979 x/auth/ante/fee.go) contains no tip handling at all; tips are never deducted, so no fund movement is possible.",
+        "reviewed_paths": [
+          "ethereum/eip712/encoding.go",
+          "ethereum/eip712/encoding_legacy.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "Fee payer is uncommitted in v0.24.0 EIP-712 (DIRECT path) and unchecked in the legacy decorator even after #1153 \u2014 can an attacker redirect the fee charge to a victim?",
+        "method": "source",
+        "result": "KILLED as a paying finding \u2014 SDK Tx.GetSigners adds FeePayer to the required signers, so a non-signer payer fails signature verification (charging is consensual); and the fee AMOUNT is committed in the typed data with fees going to the fee collector, so the attacker gains nothing (griefing only, $0 tier). Left as a hardening note for decorator parity.",
+        "reviewed_paths": [
+          "ante/cosmos/eip712.go",
+          "ethereum/eip712/encoding.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "SenderCache must not let one tx's cached sender verification satisfy a different tx/sender; mempool pre-verification must not skip ante verification",
+        "method": "source",
+        "result": "Holds \u2014 cache key is (tx.Hash(), signer.Hash(tx)), committing the full signed tx; VerifyEthSig still compares recovered vs claimed From on a hit. Preverify only rejects early and never skips ante verification.",
+        "reviewed_paths": [
+          "ante/cache/sendercache.go",
+          "ante/sigverify.go",
+          "appmempool/preverify.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "AnteCache nonce skip (tx replacement) must not allow a tx to bypass nonce verification at execution",
+        "method": "source",
+        "result": "Holds \u2014 the cache-hit skip applies only during CheckTx (non-recheck); DeliverTx always verifies nonce == expected sequence and deletes the cache entry. Mempool-level only.",
+        "reviewed_paths": [
+          "ante/cache/antecache.go",
+          "ante/eth.go",
+          "evmd/ante/handler_options.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "Cosmos txs must not pay less than the required fee (base fee / min gas price); dynamic-fee extension must not enable underpayment",
+        "method": "source",
+        "result": "Holds \u2014 feeCap >= baseFee enforced; effectivePrice = min(baseFee+tip, feeCap) so deducted effectiveFee <= stated fee; ExtensionOptionDynamicFeeTx is uncommitted in the EIP-712 amino path but can only LOWER the deducted fee. ante/evm/nativefee.go DeductFeeDecorator is dead code (no caller; evmd and Cronos use the SDK decorator). gas==0 division-by-zero unreachable: DeductFeeDecorator rejects gas==0 before invoking the checker.",
+        "reviewed_paths": [
+          "ante/evm/fee_checker.go",
+          "ante/cosmos/min_gas_price.go",
+          "ante/evm/nativefee.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "EVM tx fee deduction (ante) and gas refund (execution) must use the same price so the sender cannot profit from the fee collector; balance checks must cover gasLimit*feeCap+value",
+        "method": "source",
+        "result": "Holds \u2014 deduction (VerifyFee/GetEffectiveFee) and refund (RefundGas via AsMessage GasPrice) both use effective price min(tipCap+baseFee, feeCap); refund is leftoverGas*price with leftover <= gasLimit; CheckSenderBalance uses tx.Cost() = gasLimit*feeCap+value. ValidateEthBasic additionally pins AuthInfo fee/gas to the sum of per-msg values and rejects non-empty memo/timeout/payer/granter/tip/signer-infos on eth txs.",
+        "reviewed_paths": [
+          "x/evm/keeper/utils.go",
+          "x/evm/keeper/gas.go",
+          "x/evm/keeper/state_transition.go",
+          "x/evm/types/msg.go",
+          "ante/eth.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "ethsecp256k1.VerifySignature is mode-agnostic (raw ECDSA or EIP-712 decode of any sign bytes) \u2014 can an EIP-712 signature replay through SIGN_MODE_TEXTUAL / SIGN_MODE_DIRECT_AUX, or across chains?",
+        "method": "source",
+        "result": "No replay found \u2014 EIP-712 decode of textual/aux sign bytes fails (text is not JSON; aux doc unmarshals to an invalid AuthInfo), and raw ECDSA over different sign bytes cannot match an EIP-712 hash. Cross-chain replay blocked: typed data commits the chain_id STRING plus the numeric chainId in the domain. #1153's sign-mode restriction is defense-in-depth, not a fix for a demonstrated replay.",
+        "reviewed_paths": [
+          "crypto/ethsecp256k1/ethsecp256k1.go",
+          "ante/cosmos/eip712.go",
+          "ethereum/eip712/encoding.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "Authz limiter must block disabled msgs (incl. nested MsgExec/MsgGrant); eth-tx validation must reject unprotected txs and malformed EIP-7702 lists",
+        "method": "source",
+        "result": "Holds \u2014 AuthzLimiter recurses into MsgExec and checks MsgGrant authorization type URLs (nestedMsgs cap is stricter, not looser, across siblings). ValidateEthBasic rejects unprotected txs unless allowed, empty/non-empty EIP-7702 authorization lists, and contract-creation 7702 txs.",
+        "reviewed_paths": [
+          "ante/cosmos/authz.go",
+          "ante/cosmos/reject_msgs.go",
+          "ante/interfaces/setup.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-ethermint",
+        "artifact": null,
+        "invariant": "Ante-handler routing by first extension option must not let a tx smuggle a second extension option past validation (e.g. Web3Tx + DynamicFeeTx)",
+        "method": "source",
+        "result": "Holds for fund impact \u2014 the cosmos handler's ExtensionOptionsDecorator (HasDynamicFeeExtensionOption) rejects any non-DynamicFee option; the legacy handler lacks that decorator but a smuggled DynamicFeeTx option can only lower the deducted fee, never raise it or move funds.",
+        "reviewed_paths": [
+          "evmd/ante/ante.go",
+          "evmd/ante/evm_handler.go",
+          "evmd/ante/handler_options.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "hardening": [
+      "ante/cosmos/eip712.go VerifySignature (legacy decorator) still has no fee-payer check even after #1153 (which added payer checks only to ethereum/eip712 decode paths): add a tx.FeePayer() emptiness check for parity. Impact is griefing-only (SDK requires the payer to sign), so $0 tier, but the asymmetry is a latent trap.",
+      "#1153's rejectUncommittedAminoFields gjson scan is vacuous for live traffic: the SDK reconstructs StdSignBytes, which has no unordered/timeout_timestamp fields, so the scan can never fire on SDK-generated sign docs. The amino-mode unordered flip is still blocked by the sequence commitment (unordered requires sig.Sequence==0 but the typed data commits the sequence), except for the narrow residual of a fresh account (sequence 0) signing an unordered amino-mode EIP-712 tx that an attacker flips to ordered for double execution. Consider a tx-level unordered check in the cosmos ante handler (as #1153 did for the legacy decorator) to close the residual.",
+      "ante/evm/nativefee.go DeductFeeDecorator is dead code (no caller in evmd or Cronos; both use the SDK decorator) \u2014 remove it or wire it explicitly so its fee logic cannot drift from the live path.",
+      "ExtensionOptionDynamicFeeTx remains uncommitted by EIP-712 signing in the amino path (amino sign docs have no extension-options field). Currently harmless (it can only lower the deducted fee), but any future extension option with fund impact would inherit this gap; the decoders should reject unexpected extension options on EIP-712 paths."
+    ]
+  },
+  {
+    "coverage_id": "ethermint%2Fx%2Fevm%2Fkeeper%23MsgServer%2BStateDB%2BEIP7702::ethermint%2Fx%2Fevm%2Fkeeper%2Fmsg_server.go%23EthereumTx::profile%2Fquick%2Fall-in-scope-subsystems::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "ethermint/x/evm/keeper#MsgServer+StateDB+EIP7702",
+      "boundary": "ethermint/x/evm/keeper/msg_server.go#EthereumTx",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "ethermint/x/evm/keeper#MsgServer+StateDB+EIP7702",
+    "boundary": "ethermint/x/evm/keeper/msg_server.go#EthereumTx",
+    "subsystem": "profile/quick/all-in-scope-subsystems",
+    "attack_class": "ATTACK-CLASSES.md#Business logic",
+    "starting_paths": [
+      "x/evm/keeper/msg_server.go",
+      "x/evm/keeper/keeper.go",
+      "x/evm/keeper/statedb.go",
+      "x/evm/keeper/set_code_authorizations.go",
+      "x/evm/keeper/hooks.go",
+      "x/evm/keeper/abci.go",
+      "x/evm/keeper/config.go",
+      "x/evm/keeper/params.go",
+      "x/evm/types/auth_list.go"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [
+      {
+        "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+        "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 2,
+    "status": "covered",
+    "agent_id": "hunter-evmexec",
+    "reviewed_paths": [
+      "x/evm/keeper/abci.go",
+      "x/evm/keeper/config.go",
+      "x/evm/keeper/gas.go",
+      "x/evm/keeper/hooks.go",
+      "x/evm/keeper/keeper.go",
+      "x/evm/keeper/msg_server.go",
+      "x/evm/keeper/params.go",
+      "x/evm/keeper/set_code_authorizations.go",
+      "x/evm/keeper/state_transition.go",
+      "x/evm/keeper/statedb.go",
+      "x/evm/keeper/utils.go",
+      "x/evm/statedb/journal.go",
+      "x/evm/statedb/native.go",
+      "x/evm/statedb/state_object.go",
+      "x/evm/statedb/statedb.go",
+      "x/evm/types/auth_list.go",
+      "x/evm/types/set_code_tx.go"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "EIP-7702 validateAuthorization enforces chain-ID binding, nonce-overflow limit, signature recovery, no-code-or-delegation, and nonce match before any delegation is installed",
+        "method": "source",
+        "result": "Holds. validateAuthorization is line-for-line the geth validation (chain ID zero-or-equal, nonce+1 overflow, Authority() ecrecover, ParseDelegation code check, nonce equality); no fork delta in the validation itself.",
+        "reviewed_paths": [
+          "x/evm/keeper/set_code_authorizations.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "The durable EIP-7702 replay (applyDurableAuthorization, skips re-validation) cannot install an authorization that validation rejected or that differs from the validated one",
+        "method": "source",
+        "result": "Holds. Both the main stateDB (tmpCtx branch) and the durable stateDB (durable ctx branch) branch from the same post-ante parent ctx, and nothing writes to the parent between branch and replay except RefundGas (bank balances) and transient gas (object store), which are disjoint from the auth writes (auth nonce/codeHash + code store). The replay mirrors the main loop's exact sequence and order, so chained same-authority auths stay in sync. On the success path the durable commit is skipped via the !tmpCtxCommitted guard; on a cosmos-level error the durable cache is never committed.",
+        "reviewed_paths": [
+          "x/evm/keeper/set_code_authorizations.go",
+          "x/evm/keeper/state_transition.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": "agents/hunter-evmexec/artifacts/poc-evmexec-test.log",
+        "invariant": "A valid EIP-7702 authorization on the SUCCESS path with hooks enabled is applied exactly once (no double-apply from tmpCtx commit + durable commit)",
+        "method": "local",
+        "result": "Holds. PoC test TestPocEvmExecSuccessPathAuthAppliedOnce (valid SetCode tx via EthereumTx, succeeding LogRecordHook): authority nonce exactly 1, delegation code installed, and the call's SSTORE persisted. PASS.",
+        "reviewed_paths": [
+          "x/evm/keeper/state_transition.go",
+          "x/evm/keeper/msg_server.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": "agents/hunter-evmexec/artifacts/poc-evmexec-test.log",
+        "invariant": "Authorizations rejected by validation (wrong chain ID, invalid signature) install nothing on either the main or the durable stateDB",
+        "method": "local",
+        "result": "Holds. PoC test TestPocEvmExecInvalidAuthSkippedOnBothStateDBs: wrong-chain-ID auth and R=0-signature auth both leave the tx succeeding with authority nonce 0 and no delegation code on either stateDB. PASS. (Note: V is y-parity 0/1 in EIP-7702, so V=0 is a valid signature, not a corruption \u2014 the R=0 variant is the deterministic invalid-signature case.)",
+        "reviewed_paths": [
+          "x/evm/keeper/set_code_authorizations.go",
+          "x/evm/keeper/state_transition.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "EVM balance and bank balance cannot diverge: every AddBalance/SubBalance/Transfer is mint/burn/send through the module account, journaled so RevertToSnapshot rolls it back",
+        "method": "source",
+        "result": "Holds. GetBalance reads the bank through the current cache layer; AddBalance mints then sends from module, SubBalance sends to module then burns, Transfer is a bank SendCoins \u2014 all via ExecuteNativeAction in a fresh cache layer journaled as nativeChange, so revert truncates the layer. Repo tests TestRevertSnapshot, TestNestedSnapshot, TestReentryAttack pass in this worktree.",
+        "reviewed_paths": [
+          "x/evm/statedb/statedb.go",
+          "x/evm/statedb/journal.go",
+          "x/evm/statedb/native.go",
+          "x/evm/keeper/statedb.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "A self-destructed account cannot be deleted with a balance or resurrected with one; post-destruction credits are burned atomically with DeleteAccount",
+        "method": "source",
+        "result": "Holds. SelfDestruct burns the balance present at destruction; Commit burns any balance arriving afterwards (value-bearing CALL to the destroyed address) inside a single CacheContext with DeleteAccount, so a DeleteAccount failure rolls the burn back. Non-EVM denoms are intentionally left as orphaned bank balances (documented). Repo tests TestSelfDestructPostDestructionBalanceBurned and TestSelfDestructNoPostDestructionBalance pass.",
+        "reviewed_paths": [
+          "x/evm/statedb/statedb.go",
+          "x/evm/keeper/statedb.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": "agents/hunter-evmexec/artifacts/poc-evmexec-test.log",
+        "invariant": "The gas refund cannot exceed the same-tx fee deduction (no mint from nothing via RefundGas)",
+        "method": "local",
+        "result": "Holds. Fees are deducted via SendCoinsFromAccountToModuleVirtual into a per-(addr,txIndex) virtual balance; RefundGas draws from that same virtual balance via subVirtualCoins, which errors on insufficient funds. PoC test TestPocEvmExecRefundBoundedByDeduction: exact 1000-unit refund succeeds; 1001-unit over-refund errors atomically with no sender balance change and the virtual balance intact. PASS. Refund and deduction also use the same effective gas price (AsMessage vs VerifyFee), so refund <= deduction by construction.",
+        "reviewed_paths": [
+          "x/evm/keeper/gas.go",
+          "x/evm/keeper/utils.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "PostTxProcessing runs at most once, only on EVM success, inside tmpCtx, and a hook failure atomically discards all EVM and hook state while the durable EIP-7702 auth still applies (geth parity)",
+        "method": "source",
+        "result": "Holds. Hooks are called once in the !res.Failed() branch on tmpCtx; on error tmpCtx is not committed. MultiEvmHooks aborts on the first failing hook and tmpCtx discard makes the sequence atomic. Repo tests TestSetCodeAuthorizationSurvivesPostHookFailure and TestSetCodeAuthorizationDrainCallRolledBackButAuthorizationConsumedOnPostHookFailure (victim balance preserved, outer gets 0) pass.",
+        "reviewed_paths": [
+          "x/evm/keeper/state_transition.go",
+          "x/evm/keeper/hooks.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "UpdateParams and RegisterPreinstalls are gov-authority gated; EthereumTx is the only unprivileged entry and funnels through ApplyTransaction",
+        "method": "source",
+        "result": "Holds. Both privileged handlers check k.authority == req.Authority before any state change. AddPreinstalls rejects empty code, precompile-address collision, empty code hash, and pre-existing codeHash/sequence. EthereumTx performs no validation of its own beyond ApplyTransaction.",
+        "reviewed_paths": [
+          "x/evm/keeper/msg_server.go",
+          "x/evm/keeper/keeper.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "Finalise (whose empty() ignores bank balance) cannot drop a Commit write for a funded account on the consensus path",
+        "method": "source",
+        "result": "Holds. Finalise is called only on simulate paths (x/evm/keeper/simulate.go, rpc/types/simulate.go), never on the consensus path, so the empty-with-balance quirk cannot affect Commit.",
+        "reviewed_paths": [
+          "x/evm/statedb/statedb.go",
+          "x/evm/statedb/state_object.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "Commit detects a storage key written by both EVM execution and a nested native action before either write lands",
+        "method": "source",
+        "result": "Holds. The conflict check runs before flushNativeCacheLayers and compares store-vs-origin-vs-dirty for every EVM-dirty key, returning ErrStateConflict (surfaced as VmError/status 0) when a native write the EVM did not observe disagrees with the EVM value. A native write the EVM observed and then overwrote is correct sequential semantics. Repo tests TestNestedStateDBConflictDetection / NoConflict / InnerOnlyWrite / SameValueNoConflict pass.",
+        "reviewed_paths": [
+          "x/evm/statedb/statedb.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "Auth-list decoding cannot panic or smuggle an invalid authorization past validation (V length, oversized R/S)",
+        "method": "source",
+        "result": "Holds. SetCodeTx.Validate requires len(V)==1 per auth; R/S go through uint256.SetBytes, which truncates to the last 32 bytes (no panic) and yields an unrecoverable signature that validateAuthorization skips.",
+        "reviewed_paths": [
+          "x/evm/types/auth_list.go",
+          "x/evm/types/set_code_tx.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "Parameter changes cannot break fee/balance accounting for unprivileged users; block config caching and Begin/EndBlock EVM logic are safe",
+        "method": "source",
+        "result": "Holds for the unprivileged path. Params.Validate covers EvmDenom, EIPs, bools, HeaderHashNum, HistoryServeWindow, ChainConfig, and SetParams is gov-gated. EVMBlockConfig is cached per block and cleared in EndBlock, so a gov param change takes effect next block (1-block staleness, gov-gated). BeginBlock sets chain ID/header hash and prunes old header hashes; EndBlock collects the bloom and clears the params cache. No fund path.",
+        "reviewed_paths": [
+          "x/evm/keeper/params.go",
+          "x/evm/keeper/config.go",
+          "x/evm/keeper/abci.go"
+        ]
+      },
+      {
+        "agent_id": "hunter-evmexec",
+        "artifact": null,
+        "invariant": "The DebugTrace/TraceReplay fee skip and the contract-creation nonce arithmetic cannot be reached or abused on the consensus path",
+        "method": "source",
+        "result": "Holds. DebugTrace/TraceReplay are set only in grpc_query.go (RPC simulate paths, commit=false). The create-path nonce arithmetic (oldNonce + nestedCreates) can only underflow for the tx sender themselves (self-grief, no victim), and evm.Create increments the sender nonce before init code runs, so afterCreateNonce >= msg.Nonce+1 in practice.",
+        "reviewed_paths": [
+          "x/evm/keeper/state_transition.go"
+        ]
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [],
+    "proposed_by": "critic-final",
+    "hardening": [
+      "RefundGas refunds leftover gas to msg.From, not to the fee payer: with a feegrant (or a multi-sender Cosmos tx) the grantee/other sender pockets the unused fee portion funded by the granter/first signer. Not reported: it requires the victim to deliberately grant/sign (fails the no-unusual-actions gate) and RefundGas is verbatim upstream evmos/ethermint, so it is not fork-newly-exploitable.",
+      "StateDB.err is sticky across RevertToSnapshot: a failed native action inside a reverted call frame still aborts Commit, rejecting the whole tx at the cosmos level instead of just reverting the frame. Impact is tx-level DoS only (no fund movement); consider journaling/clearing the error on revert.",
+      "MinGasMultiplier validation (validateMinGasPrice) only rejects negatives, so a gov-set value > 1 makes gasUsed exceed gasLimit and all txs fail closed (RefundGas virtual-balance error / OutOfGas). Gov-gated and fail-closed, but the param validator should cap the multiplier at 1.",
+      "Self-delegation nonce quirk (compatibility only): the ante handler pre-increments the sender nonce, so a self-authorization must carry nonce+1 where geth expects the pre-tx nonce; a standard Ethereum-signed self-auth is silently skipped on this fork. No theft (mismatch only skips), but wallets built for Ethereum will see self-delegations fail.",
+      "EVMBlockConfig is cached per block and only cleared in EndBlock, so a gov UpdateParams (e.g. disabling EnableCall) takes effect one block late. Gov-gated; note for upgrade runbooks."
+    ]
+  }
+]

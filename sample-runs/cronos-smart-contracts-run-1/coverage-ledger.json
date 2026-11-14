@@ -1,0 +1,755 @@
+[
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Access control",
+   "boundary": "vvs-farm/contracts/Craftsman.sol#add/set/migrate/distributeSupply",
+   "subsystem": "profile/standard/craftsman",
+   "surface": "vvs-farm#Craftsman-admin"
+  },
+  "coverage_id": "vvs-farm%23Craftsman-admin::vvs-farm%2Fcontracts%2FCraftsman.sol%23add%2Fset%2Fmigrate%2FdistributeSupply::profile%2Fstandard%2Fcraftsman::ATTACK-CLASSES.md%23Access%20control",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Access control/owner-trust",
+    "reason": "Owner trusted-role abuse is out of scope (SlowMist N1 known); only unprivileged bypasses count"
+   }
+  ],
+  "hardening": [
+   "Owner is a single EOA (N1 known), not the timelock.",
+   "add() same LP twice / set() without update is a documented owner footgun: misallocation only, not theft."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "totalAllocPoint == sum of pool allocPoints across all add/set/updateStakingRatio orderings",
+    "method": "local",
+    "result": "Holds. testTotalAllocPointInvariant passes incl. ratio 0, direct set of pid 0, and the points==0 path. Owner-only functions.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "migrate() cannot be abused by non-owners to steal pool LP tokens",
+    "method": "local",
+    "result": "Holds. testMigrateAnyoneHonestNoLoss: anyone CAN trigger migrate, but with an honest 1:1 migrator there is no loss. Live migrator = 0x0 (verified by coordinator); a malicious migrator is an owner-trust issue (SlowMist N1).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "CraftsmanAdmin timelock cannot be bypassed",
+    "method": "local",
+    "result": "Holds (and moot). testCraftsmanAdminTimelock: no enable -> revert; <3 days -> revert; >3 days -> success. Live: Craftsman owner is an EOA (0x7Ed52eD16D4f4365046B9127c4a1081669682DB5), so CraftsmanAdmin is NOT used in deployment. distributeSupply/updateMultiplier/dev() all onlyOwner (access-control test passes); live devaddr = 0x0.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/CraftsmanAdmin.sol",
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/Craftsman.sol",
+   "vvs-farm/contracts/CraftsmanAdmin.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/Craftsman.sol",
+   "vvs-farm/contracts/CraftsmanAdmin.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#Craftsman-admin",
+  "boundary": "vvs-farm/contracts/Craftsman.sol#add/set/migrate/distributeSupply",
+  "subsystem": "profile/standard/craftsman",
+  "attack_class": "ATTACK-CLASSES.md#Access control",
+  "agent_id": "hunter-craftsman"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-farm/contracts/Craftsman.sol#deposit/withdraw/updatePool",
+   "subsystem": "profile/standard/craftsman",
+   "surface": "vvs-farm#Craftsman-pools"
+  },
+  "coverage_id": "vvs-farm%23Craftsman-pools::vvs-farm%2Fcontracts%2FCraftsman.sol%23deposit%2Fwithdraw%2FupdatePool::profile%2Fstandard%2Fcraftsman::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+    "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+   }
+  ],
+  "hardening": [
+   "deposit()/emergencyWithdraw violate Checks-Effects-Interactions (transfer before state update) \u2014 consider nonReentrant; practical risk small (live pools are plain ERC20, multiplier 0).",
+   "safeVVSTransfer silently pays less on shortfall while rewardDebt is still reset (remainder forfeited) \u2014 unreachable on the normal path."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "Reward minting equals reward payout (no over/under-payment from accVVSPerShare accounting)",
+    "method": "local",
+    "result": "Holds. testMintVsPayConsistency: paid + dust == minted EXACTLY (dust 1.58e10 wei of 4.16e26). Shortfall only possible via deflationary tokens (SlowMist N6, excluded). Live: BONUS_MULTIPLIER=0 so updatePool mints nothing at all (verified independently by coordinator via cast).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "deposit() reentrancy cannot double-pay pending rewards to an attacker",
+    "method": "local",
+    "result": "Mechanism real in code, not reportable. testDepositReentrancyDoublePay: a malicious LP token that is its own depositor gets paid 2x pending; honest user in same pool gets dust. KILLED: requires owner to add the malicious token as a pool (172 live pools are genuine pairs); same class as SlowMist N9 (known); inert live (multiplier 0). Side finding: a single staker cannot double-claim beyond minted \u2014 2nd payment capped by Workbench balance.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "accVVSPerShare cannot be inflated by lpSupply manipulation or donations",
+    "method": "local",
+    "result": "Holds. Requires multiplier > 0 (live 0) or deflationary token (N6, excluded); donations only dilute the donor.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/Craftsman.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/Craftsman.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#Craftsman-pools",
+  "boundary": "vvs-farm/contracts/Craftsman.sol#deposit/withdraw/updatePool",
+  "subsystem": "profile/standard/craftsman",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-craftsman"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-farm/contracts/Craftsman.sol#enterStaking/leaveStaking/emergencyWithdraw",
+   "subsystem": "profile/standard/craftsman",
+   "surface": "vvs-farm#Craftsman-staking"
+  },
+  "coverage_id": "vvs-farm%23Craftsman-staking::vvs-farm%2Fcontracts%2FCraftsman.sol%23enterStaking%2FleaveStaking%2FemergencyWithdraw::profile%2Fstandard%2Fcraftsman::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Business logic/bench",
+    "reason": "VVS-Bench is listed out of scope while the Workbench contract is in scope: BENCH-token-centric findings are scope-ambiguous and must be flagged as such"
+   }
+  ],
+  "hardening": [
+   "emergencyWithdraw should burn BENCH so BENCH supply cannot inflate unboundedly.",
+   "leaveStaking fails entirely if the user moved some BENCH \u2014 document BENCH as a receipt token that must be held."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "BENCH supply tracks staked VVS 1:1 (no free BENCH)",
+    "method": "local",
+    "result": "VIOLATED IN CODE, SCOPE-AMBIGUOUS, NOT REPORTABLE. emergencyWithdraw does not burn BENCH: testBenchDuplicationViaEmergencyWithdraw proves stake 1000 VVS -> +1000 BENCH -> emergencyWithdraw -> VVS back, BENCH kept; 3 loops -> 3000 BENCH, VVS intact. On-chain evidence (verified independently by coordinator): BENCH totalSupply 15,264,981,287,223 exceeds Craftsman VVS balance 15,263,079,737,767 by exactly 1,901,549,456 (cumulative emergencyWithdraw volume). NOT reportable: program lists \"VVS-Bench is Out of Scope\"; impact is BENCH dilution only (excluded incentive-devaluation category); BENCH has no redeem/governance function in any in-scope contract; no BENCH/WCRO or BENCH/VVS pair exists on the VVS Factory (checked on-chain), so no dump path to VVS on the native DEX.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol",
+     "vvs-farm/contracts/Workbench.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": "agents/hunter-craftsman/artifacts/Craftsman.t.sol",
+    "invariant": "A user who transferred away BENCH is not locked out of their staked VVS",
+    "method": "local",
+    "result": "Holds for principal. leaveStaking reverts (burn amount exceeds balance) but emergencyWithdraw always returns principal (pending forfeited). Self-inflicted, no attacker vector.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Craftsman.sol",
+     "vvs-farm/contracts/Workbench.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/Craftsman.sol",
+   "vvs-farm/contracts/Workbench.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/Craftsman.sol",
+   "vvs-farm/contracts/Workbench.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#Craftsman-staking",
+  "boundary": "vvs-farm/contracts/Craftsman.sol#enterStaking/leaveStaking/emergencyWithdraw",
+  "subsystem": "profile/standard/craftsman",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-craftsman"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Access control",
+   "boundary": "vvs-farm/contracts/libs/Multicall2.sol#tryAggregate/call",
+   "subsystem": "profile/standard/token",
+   "surface": "vvs-farm#Multicall2"
+  },
+  "coverage_id": "vvs-farm%23Multicall2::vvs-farm%2Fcontracts%2Flibs%2FMulticall2.sol%23tryAggregate%2Fcall::profile%2Fstandard%2Ftoken::ATTACK-CLASSES.md%23Access%20control",
+  "excluded_blocks": [],
+  "hardening": [
+   "blockAndAggregate returns blockHash 0 (blockhash(block.number) is always 0) \u2014 identical MakerDAO canonical quirk, informational only."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-token",
+    "artifact": "agents/hunter-token/artifacts/Multicall2.t.sol",
+    "invariant": "Multicall2 cannot be abused as an execution proxy to act as a victim",
+    "method": "local",
+    "result": "Holds. Diff vs MakerDAO canonical (HEAD 103a8a2): only pragma + 1 blank line; all 12 functions identical; no delegatecall. Calls execute as Multicall2 itself, no value forwarding, non-payable; no VVS contract trusts the Multicall2 address (zero references). PoC: victim transferFrom via Multicall2 fails, direct spender transferFrom succeeds. 7/7 forge tests pass.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/libs/Multicall2.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/libs/Multicall2.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/libs/Multicall2.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#Multicall2",
+  "boundary": "vvs-farm/contracts/libs/Multicall2.sol#tryAggregate/call",
+  "subsystem": "profile/standard/token",
+  "attack_class": "ATTACK-CLASSES.md#Access control",
+  "agent_id": "hunter-token"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-farm/contracts/VVSToken.sol#mint/distributeSupply",
+   "subsystem": "profile/standard/token",
+   "surface": "vvs-farm#VVSToken"
+  },
+  "coverage_id": "vvs-farm%23VVSToken::vvs-farm%2Fcontracts%2FVVSToken.sol%23mint%2FdistributeSupply::profile%2Fstandard%2Ftoken::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Access control/owner-trust",
+    "reason": "Owner trusted-role abuse is out of scope (SlowMist N1 known); only unprivileged bypasses count"
+   }
+  ],
+  "hardening": [
+   "H1: No on-chain supply cap; nominal 100T is a social schedule only (live totalSupply 101.64T \u2014 blocks faster than assumed BLOCK_TIME=6s). Excluded category (incentive devaluation without user fund loss).",
+   "H2: nextDistributionTimestamp advances from stored value, not block.timestamp \u2014 a late owner can catch up missed years with sequential calls (owner-only, N1 territory).",
+   "H3: Craftsman owner is an EOA 0x7ed52ed16d4f4365046b9127c4a1081669682db5 (live, block 105792357; N1/N3 known)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-token",
+    "artifact": "agents/hunter-token/artifacts/VVSToken.t.sol",
+    "invariant": "No unprivileged party can mint VVS or call distributeSupply",
+    "method": "local",
+    "result": "Holds. mint/distributeSupply onlyOwner (OZ 3.4.0); only mint path is Craftsman.updatePool -> Workbench (scheduled reward); owner is permanently Craftsman (no transferOwnership/renounceOwnership calls). 9/9 forge tests pass (re-run by coordinator: 22/22 across 3 suites).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSToken.sol",
+     "vvs-farm/contracts/VVSInitMintable.sol",
+     "vvs-farm/contracts/Craftsman.sol",
+     "vvs-farm/contracts/CraftsmanAdmin.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-token",
+    "artifact": "agents/hunter-token/artifacts/VVSToken.t.sol",
+    "invariant": "distributeSupply cannot give the team more than 70% or be replayed",
+    "method": "local",
+    "result": "Holds. Community share >=30% enforced at end (revert rolls back team mints); SafeMath blocks underflow; timestamp advances 365d per call. Live-state replay: last distribution took exactly max 70% team cut (6.25T x 30% x 6 / 31536000 == live SUPPLY_PER_BLOCK 356735159817351598173515).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSInitMintable.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/VVSToken.sol",
+   "vvs-farm/contracts/VVSInitMintable.sol",
+   "vvs-farm/contracts/Craftsman.sol",
+   "vvs-farm/contracts/CraftsmanAdmin.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/VVSToken.sol",
+   "vvs-farm/contracts/VVSInitMintable.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#VVSToken",
+  "boundary": "vvs-farm/contracts/VVSToken.sol#mint/distributeSupply",
+  "subsystem": "profile/standard/token",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-token"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Access control",
+   "boundary": "vvs-farm/contracts/VVSVault.sol#admin-functions",
+   "subsystem": "profile/standard/vault",
+   "surface": "vvs-farm#VVSVault-admin"
+  },
+  "coverage_id": "vvs-farm%23VVSVault-admin::vvs-farm%2Fcontracts%2FVVSVault.sol%23admin-functions::profile%2Fstandard%2Fvault::ATTACK-CLASSES.md%23Access%20control",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Access control/owner-trust",
+    "reason": "Owner/admin trusted-role abuse is out of scope (SlowMist N1 known); only unprivileged bypasses count"
+   }
+  ],
+  "hardening": [
+   "owner == admin (single address) centralizes vault power (N1-adjacent)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-vault",
+    "artifact": null,
+    "invariant": "No unprivileged party can call admin functions or bypass fee caps",
+    "method": "source",
+    "result": "Holds. All setters/pause/emergencyWithdraw/inCaseTokensGetStuck are onlyOwner/onlyAdmin (direct equality checks, no delegatecall/init); fee setters capped (5%/1%/1%/72h); inCaseTokensGetStuck excludes token + receiptToken (receiptToken verified on-chain = Workbench/BENCH). Live: owner == admin == 0x7c2e6e70ba3649dbf141887f99184bab8301c313; treasury 0xc51e0426a90cef83192164e7127c19d4388a5213; fees at defaults. Owner==admin centralization is N1-adjacent (trusted-role, out of scope).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSVault.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/VVSVault.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/VVSVault.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#VVSVault-admin",
+  "boundary": "vvs-farm/contracts/VVSVault.sol#admin-functions",
+  "subsystem": "profile/standard/vault",
+  "attack_class": "ATTACK-CLASSES.md#Access control",
+  "agent_id": "hunter-vault"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-farm/contracts/VVSVault.sol#harvest/_earn",
+   "subsystem": "profile/standard/vault",
+   "surface": "vvs-farm#VVSVault-harvest"
+  },
+  "coverage_id": "vvs-farm%23VVSVault-harvest::vvs-farm%2Fcontracts%2FVVSVault.sol%23harvest%2F_earn::profile%2Fstandard%2Fvault::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+    "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+   }
+  ],
+  "hardening": [
+   "harvest() should take fees only from the delta of rewards claimed, not the whole available() balance (N2-adjacent)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-vault",
+    "artifact": "agents/hunter-vault/artifacts/VaultHarvestCapture.t.sol",
+    "invariant": "harvest() fees cannot be abused to drain user funds",
+    "method": "local",
+    "result": "Holds for unprivileged attackers. Fees are taken from available() (whole idle balance incl. donations) \u2014 the emergencyWithdraw variant is SlowMist N2 (known); direct donation is self-harming (donor loses 2% to treasury, 97.75% stays in pool). Live available()=0, lastHarvestedTime 14 Aug 2026 (~3 months ago \u2014 no harvest incentive with alloc 0).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSVault.sol",
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/VVSVault.sol",
+   "vvs-farm/contracts/Craftsman.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/VVSVault.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#VVSVault-harvest",
+  "boundary": "vvs-farm/contracts/VVSVault.sol#harvest/_earn",
+  "subsystem": "profile/standard/vault",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-vault"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-farm/contracts/VVSVault.sol#deposit/withdraw",
+   "subsystem": "profile/standard/vault",
+   "surface": "vvs-farm#VVSVault-shares"
+  },
+  "coverage_id": "vvs-farm%23VVSVault-shares::vvs-farm%2Fcontracts%2FVVSVault.sol%23deposit%2Fwithdraw::profile%2Fstandard%2Fvault::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Resource exhaustion",
+    "reason": "DoS/DDoS/spamming explicitly out of scope for this program"
+   },
+   {
+    "block": "ATTACK-CLASSES.md#Business logic/zero-share",
+    "reason": "Vulnerabilities depending on a pool/vault with zero shares (empty) explicitly out of scope"
+   }
+  ],
+  "hardening": [
+   "deposit() should price shares including pendingVVS (or harvest-before-mint) to close the deposit-before-harvest hole if pool 0 emissions are ever re-enabled. Currently moot (alloc 0).",
+   "Consider a minimum deposit / zero-share check against dust donations (currently only <113 wei affected live)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-vault",
+    "artifact": "agents/hunter-vault/artifacts/VaultHarvestCapture.t.sol",
+    "invariant": "A depositor cannot capture pending Craftsman rewards belonging to existing share holders",
+    "method": "local",
+    "result": "MECHANISM REAL IN CODE, DEAD IN LIVE STATE. deposit() prices shares from balanceOf() which excludes pending rewards; _earn() -> enterStaking() then pays all pending into the vault AFTER shares are minted. PoC testDepositCapturesPendingRewards (rewards ON): attacker deposits 10M, profits 9,090,909 VVS from victim 1M + 10M pending, no harvest() called. KILLED LIVE: pool 0 allocPoint=0, totalAllocPoint=1, pendingVVS(0,vault)=0 (verified independently by coordinator via cast, block ~105.8M); pool 0 accrues nothing. PoC testLiveState_NoPending_NoProfit (exact live replica): attacker profit exactly 0. Revival requires owner action (add/set) \u2014 not an unprivileged vector. Conditional on owner re-enabling pool 0 emissions.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSVault.sol",
+     "vvs-farm/contracts/Craftsman.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-vault",
+    "artifact": "agents/hunter-vault/artifacts/VaultHarvestCapture.t.sol",
+    "invariant": "Rounding and donation tricks cannot dilute or steal from depositors",
+    "method": "local",
+    "result": "Holds. Only deposits < 112.33 wei round to 0 shares live (~$0; testDustDepositZeroShares); front-run donation leaves victim redeem value exactly D (donor loses); no unprivileged path lowers balanceOf() without lowering shares. Zero-share/first-depositor attacks excluded by program anyway (vault holds 135.8B shares, ~$11.12M TVL).",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSVault.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-vault",
+    "artifact": "agents/hunter-vault/artifacts/VaultHarvestCapture.t.sol",
+    "invariant": "notContract blocks contract callers (incl. flash-loan contracts) from deposit/withdraw/harvest",
+    "method": "local",
+    "result": "Holds. testNotContractBlocksContracts passes: contract callers revert.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/VVSVault.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/VVSVault.sol",
+   "vvs-farm/contracts/Craftsman.sol"
+  ],
+  "selected_companion_blocks": [
+   "WEB-PROTOCOL-AND-AUTH.md#Core discipline"
+  ],
+  "starting_paths": [
+   "vvs-farm/contracts/VVSVault.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#VVSVault-shares",
+  "boundary": "vvs-farm/contracts/VVSVault.sol#deposit/withdraw",
+  "subsystem": "profile/standard/vault",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-vault"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Access control",
+   "boundary": "vvs-farm/contracts/Workbench.sol#mint/burn/safeVVSTransfer",
+   "subsystem": "profile/standard/craftsman",
+   "surface": "vvs-farm#Workbench"
+  },
+  "coverage_id": "vvs-farm%23Workbench::vvs-farm%2Fcontracts%2FWorkbench.sol%23mint%2Fburn%2FsafeVVSTransfer::profile%2Fstandard%2Fcraftsman::ATTACK-CLASSES.md%23Access%20control",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Business logic/bench",
+    "reason": "VVS-Bench is listed out of scope while the Workbench contract is in scope: BENCH-token-centric findings are scope-ambiguous and must be flagged as such"
+   }
+  ],
+  "hardening": [],
+  "local_checks": [
+   {
+    "agent_id": "hunter-craftsman",
+    "artifact": null,
+    "invariant": "Workbench VVS holdings (4.09T) can only leave via legitimate pending claims",
+    "method": "source",
+    "result": "Holds. mint/burn/safeVVSTransfer are onlyOwner (owner = Craftsman, verified live); safeVVSTransfer pays at most the owed pending and at most the balance. Workbench holds 4,087,313,421,566 VVS (verified by coordinator) \u2014 already-minted unclaimed rewards; no drain path found.",
+    "reviewed_paths": [
+     "vvs-farm/contracts/Workbench.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-farm/contracts/Workbench.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-farm/contracts/Workbench.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-farm#Workbench",
+  "boundary": "vvs-farm/contracts/Workbench.sol#mint/burn/safeVVSTransfer",
+  "subsystem": "profile/standard/craftsman",
+  "attack_class": "ATTACK-CLASSES.md#Access control",
+  "agent_id": "hunter-craftsman"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-swap-core/contracts/VVSFactory.sol+VVS Pair",
+   "subsystem": "profile/standard/swap",
+   "surface": "vvs-swap-core#Factory-Pair"
+  },
+  "coverage_id": "vvs-swap-core%23Factory-Pair::vvs-swap-core%2Fcontracts%2FVVSFactory.sol%2BVVS%20Pair::profile%2Fstandard%2Fswap::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Business logic/known-univ2",
+    "reason": "Known Uniswap V2 / Ethereum fork vulnerabilities are explicitly out of scope; only VVS-specific modifications count"
+   }
+  ],
+  "hardening": [
+   "vvs-swap-core package.json/yarn.lock do not declare @openzeppelin/contracts although VVSERC20.sol imports it \u2014 build not fully reproducible from the repo alone."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-swap",
+    "artifact": "agents/hunter-swap/artifacts/full-normalized.diff",
+    "invariant": "VVS core differs from Uniswap V2 only in cosmetic/policy changes, with no new attacker-reachable flaw",
+    "method": "local",
+    "result": "Holds. Normalized diff vs v2-core v1.0.0 (135 lines total across core+periphery): _mintFee denominator rootK*2+rootKLast (protocol fee 1/3 of sqrt(k) growth vs 1/6 upstream \u2014 intentional policy, feeTo is a trusted role set by feeToSetter); INIT_CODE_PAIR_HASH constant; permit uses OZ ECDSA recover (N5 fixed); vvsCall rename; LP name/symbol. Swap fee 997/1000, MINIMUM_LIQUIDITY, lock/skim/sync unchanged.",
+    "reviewed_paths": [
+     "vvs-swap-core/contracts/VVSFactory.sol",
+     "vvs-swap-core/contracts/VVSPair.sol",
+     "vvs-swap-core/contracts/VVSERC20.sol",
+     "vvs-swap-core/contracts/interfaces/IVVSFactory.sol",
+     "vvs-swap-core/contracts/interfaces/IVVSPair.sol",
+     "vvs-swap-core/contracts/interfaces/IVVSERC20.sol",
+     "vvs-swap-core/contracts/interfaces/IVVSCallee.sol",
+     "vvs-swap-core/contracts/interfaces/IERC20.sol",
+     "vvs-swap-core/contracts/libraries/Math.sol",
+     "vvs-swap-core/contracts/libraries/UQ112x112.sol",
+     "vvs-swap-core/contracts/libraries/SafeMath.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-swap",
+    "artifact": "agents/hunter-swap/artifacts/VVSFeeShare.t.sol",
+    "invariant": "The 1/3 protocol fee and permit fix behave as claimed; pairFor hash is self-consistent with the deployed factory",
+    "method": "local",
+    "result": "Holds. 6/6 forge tests pass (re-run by coordinator): testMintFeeIsOneThird proves feeTo receives exactly 2x the upstream formula; testPermitMalleabilityRejected proves malleable sig reverts without consuming nonce; testPairForMatchesFactory + live cast: on-chain INIT_CODE_PAIR_HASH 0xa77ee1cc... == VVSLibrary.sol:24 literal; live feeTo() is SET (0x3bc41521...), so the fee policy is active but owner-controlled.",
+    "reviewed_paths": [
+     "vvs-swap-core/contracts/VVSPair.sol",
+     "vvs-swap-core/contracts/VVSERC20.sol",
+     "vvs-swap-core/contracts/VVSFactory.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-swap-core/contracts/VVSFactory.sol",
+   "vvs-swap-core/contracts/VVSPair.sol",
+   "vvs-swap-core/contracts/VVSERC20.sol",
+   "vvs-swap-core/contracts/interfaces/IVVSFactory.sol",
+   "vvs-swap-core/contracts/interfaces/IVVSPair.sol",
+   "vvs-swap-core/contracts/interfaces/IVVSERC20.sol",
+   "vvs-swap-core/contracts/interfaces/IVVSCallee.sol",
+   "vvs-swap-core/contracts/interfaces/IERC20.sol",
+   "vvs-swap-core/contracts/libraries/Math.sol",
+   "vvs-swap-core/contracts/libraries/UQ112x112.sol",
+   "vvs-swap-core/contracts/libraries/SafeMath.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-swap-core/contracts/VVSFactory.sol",
+   "vvs-swap-core/contracts/VVSPair.sol",
+   "vvs-swap-core/contracts/VVSERC20.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-swap-core#Factory-Pair",
+  "boundary": "vvs-swap-core/contracts/VVSFactory.sol+VVS Pair",
+  "subsystem": "profile/standard/swap",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-swap"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-swap-periphery/contracts/VVSRouter.sol#swaps/liquidity",
+   "subsystem": "profile/standard/swap",
+   "surface": "vvs-swap-periphery#Router"
+  },
+  "coverage_id": "vvs-swap-periphery%23Router::vvs-swap-periphery%2Fcontracts%2FVVSRouter.sol%23swaps%2Fliquidity::profile%2Fstandard%2Fswap::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [
+   {
+    "block": "ATTACK-CLASSES.md#Business logic/known-univ2",
+    "reason": "Known Uniswap V2 / Ethereum fork vulnerabilities are explicitly out of scope; only VVS-specific modifications count"
+   }
+  ],
+  "hardening": [
+   "VVSOracleLibrary.currentCumulativePrices should return the upstream order so integrators porting Uniswap code do not mix up values (current impact zero \u2014 unused by in-scope contracts)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-swap",
+    "artifact": "agents/hunter-swap/artifacts/full-normalized.diff",
+    "invariant": "VVS Router/Library differ from Uniswap V2 only cosmetically, with no new attacker-reachable flaw",
+    "method": "local",
+    "result": "Holds. Diff vs v2-periphery v1.0.0-beta.0 (Router01/Library/Oracle) and master ed24991 (Router02): Router logic identical upstream (only import paths + contract names); _addLiquidity, all swap paths, fee-on-transfer variants, removeLiquidityWithPermit unchanged; VVSLibrary identical except init-code-hash literal a77ee1... (correct for the different pair bytecode); VVSOracleLibrary return order swapped (price0, price1, timestamp) but it has NO in-scope consumer (Router does not use it).",
+    "reviewed_paths": [
+     "vvs-swap-periphery/contracts/VVSRouter.sol",
+     "vvs-swap-periphery/contracts/VVSRouter01.sol",
+     "vvs-swap-periphery/contracts/libraries/VVSLibrary.sol",
+     "vvs-swap-periphery/contracts/libraries/VVSOracleLibrary.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-swap",
+    "artifact": "agents/hunter-swap/artifacts/VVSFeeShare.t.sol",
+    "invariant": "The 0.3% swap fee is intact (K-invariant rejects +1 wei over getAmountOut)",
+    "method": "local",
+    "result": "Holds. testSwapFeeIsStandard997 passes (re-run by coordinator, 6/6 suite).",
+    "reviewed_paths": [
+     "vvs-swap-periphery/contracts/VVSRouter.sol",
+     "vvs-swap-periphery/contracts/libraries/VVSLibrary.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-swap-periphery/contracts/VVSRouter.sol",
+   "vvs-swap-periphery/contracts/VVSRouter01.sol",
+   "vvs-swap-periphery/contracts/libraries/VVSLibrary.sol",
+   "vvs-swap-periphery/contracts/libraries/VVSOracleLibrary.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-swap-periphery/contracts/VVSRouter.sol",
+   "vvs-swap-periphery/contracts/VVSRouter01.sol",
+   "vvs-swap-periphery/contracts/libraries/VVSLibrary.sol",
+   "vvs-swap-periphery/contracts/libraries/VVSOracleLibrary.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-swap-periphery#Router",
+  "boundary": "vvs-swap-periphery/contracts/VVSRouter.sol#swaps/liquidity",
+  "subsystem": "profile/standard/swap",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-swap"
+ },
+ {
+  "attempts": [],
+  "canonical_refs": {
+   "attack_class": "ATTACK-CLASSES.md#Business logic",
+   "boundary": "vvs-swap-periphery/contracts/WCRO.sol#deposit/withdraw",
+   "subsystem": "profile/standard/token",
+   "surface": "vvs-swap-periphery#WCRO"
+  },
+  "coverage_id": "vvs-swap-periphery%23WCRO::vvs-swap-periphery%2Fcontracts%2FWCRO.sol%23deposit%2Fwithdraw::profile%2Fstandard%2Ftoken::ATTACK-CLASSES.md%23Business%20logic",
+  "excluded_blocks": [],
+  "hardening": [
+   "H4: WCRO withdraw uses .transfer (2300 gas) \u2014 canonical WETH9 quirk; contracts with expensive fallbacks cannot withdraw (known fork issue, out of scope).",
+   "H5: WCRO totalSupply() == contract ETH balance, not sum of balanceOf \u2014 diverges on force-feed (currently none)."
+  ],
+  "local_checks": [
+   {
+    "agent_id": "hunter-token",
+    "artifact": "agents/hunter-token/artifacts/WCRO.t.sol",
+    "invariant": "WCRO is the canonical WETH9 logic with no VVS modification that lets anyone mint or steal",
+    "method": "local",
+    "result": "Holds. Diff vs in-repo WETH9 (verbatim DappHub): only name/symbol + active receive(){deposit()}. Mint only via 1:1 deposit to msg.sender; transferFrom enforces allowance. 6/6 forge tests pass.",
+    "reviewed_paths": [
+     "vvs-swap-periphery/contracts/WCRO.sol",
+     "vvs-swap-periphery/contracts/test/WETH9.sol"
+    ]
+   },
+   {
+    "agent_id": "hunter-token",
+    "artifact": "agents/hunter-token/artifacts/WCRO.t.sol",
+    "invariant": "Force-fed CRO (selfdestruct) cannot be stolen via totalSupply accounting",
+    "method": "local",
+    "result": "Holds as no-fund-impact. totalSupply rises but no balance is created and nothing is withdrawable by the attacker; cosmetic WETH9 quirk. Live: totalSupply == contract balance (683931.875 CRO), no surplus.",
+    "reviewed_paths": [
+     "vvs-swap-periphery/contracts/WCRO.sol"
+    ]
+   }
+  ],
+  "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+  "prior_status": "none",
+  "result_fingerprints": [],
+  "reviewed_paths": [
+   "vvs-swap-periphery/contracts/WCRO.sol",
+   "vvs-swap-periphery/contracts/test/WETH9.sol"
+  ],
+  "selected_companion_blocks": [],
+  "starting_paths": [
+   "vvs-swap-periphery/contracts/WCRO.sol"
+  ],
+  "status": "covered",
+  "unresolved": [],
+  "wave": 1,
+  "surface": "vvs-swap-periphery#WCRO",
+  "boundary": "vvs-swap-periphery/contracts/WCRO.sol#deposit/withdraw",
+  "subsystem": "profile/standard/token",
+  "attack_class": "ATTACK-CLASSES.md#Business logic",
+  "agent_id": "hunter-token"
+ }
+]

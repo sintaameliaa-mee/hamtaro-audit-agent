@@ -1,0 +1,103 @@
+[
+  {
+    "verdict": "confirmed",
+    "fingerprint": "demo-vault:withdraw:reentrancy",
+    "title": "Reentrancy in DemoVault.withdraw drains the whole vault",
+    "description": "DemoVault.withdraw() sends ETH to the caller before zeroing the caller's recorded balance, so a malicious receiver contract can re-enter withdraw() and be paid its full balance again on every re-entry. A 1-ether attacker drains the entire vault, including other users' deposits. (Intentional demo bug in DemoVault.sol.)",
+    "root_cause": "Checks-interactions-effects ordering: the external call at DemoVault.sol withdraw() precedes the balance update (balances[msg.sender] = 0), so the balance check on re-entry still sees the pre-withdrawal balance.",
+    "intended_behavior": "Each withdrawal pays the caller exactly its recorded balance once; no caller can withdraw more than it deposited, and no caller can withdraw other users' funds.",
+    "trace": [
+      {
+        "kind": "entrypoint",
+        "file": "demo/src/DemoVault.sol",
+        "line": 29,
+        "scope": "DemoVault.withdraw",
+        "description": "Public withdraw() reads the caller's balance and checks it is non-zero."
+      },
+      {
+        "kind": "propagation",
+        "file": "demo/src/Attacker.sol",
+        "line": 35,
+        "scope": "Attacker.receive",
+        "description": "The attacker's receive() callback re-enters withdraw() while the vault still holds funds."
+      },
+      {
+        "kind": "sink",
+        "file": "demo/src/DemoVault.sol",
+        "line": 38,
+        "scope": "DemoVault.withdraw",
+        "description": "The external call pays the caller before the balance is zeroed, so every re-entry pays again."
+      }
+    ],
+    "evidence": [
+      {
+        "file": "demo/src/DemoVault.sol",
+        "line": 38,
+        "description": "External call precedes the state update (call at this line, balance zeroed later)."
+      },
+      {
+        "file": "demo/src/DemoVault.sol",
+        "line": 40,
+        "description": "Balance is zeroed only after the external call returns."
+      },
+      {
+        "file": "demo/test/DemoVault.t.sol",
+        "line": 38,
+        "description": "Foundry test testReentrancyDrainsVault: 1-ether attacker drains the vault; PASS."
+      },
+      {
+        "file": "demo/test/DemoVault.t.sol",
+        "line": 50,
+        "description": "Foundry test testFixedVaultBlocksReentrancy: the same attack fails against DemoVaultFixed; PASS."
+      }
+    ],
+    "conditions": [
+      {
+        "kind": "authentication_level",
+        "description": "No privilege needed: any address that can deposit 1 ether can run the attack."
+      },
+      {
+        "kind": "data_state",
+        "description": "The vault must hold other users' deposits for the drain to exceed the attacker's own funds."
+      }
+    ],
+    "execution": {
+      "attacker_perspective": "An ordinary depositor with 1 ether, no special role, no victim cooperation.",
+      "payloads": [
+        "Attacker.attack() after funding the Attacker contract with 1 ether",
+        "Attacker.receive() re-enters DemoVault.withdraw() while vault balance >= 1 ether"
+      ],
+      "instructions": [
+        "Deploy DemoVault; a victim deposits 10 ether.",
+        "Deploy Attacker pointing at the vault; fund it with 1 ether.",
+        "Call Attacker.attack(): it deposits 1 ether, then withdraws; each payout re-enters withdraw().",
+        "Or run the packaged PoC: forge test --match-test testReentrancyDrainsVault."
+      ],
+      "observed_result": "Vault balance 0 ether; attacker balance 11 ether (10 ether of victim funds plus its own 1 ether deposit); 10 reentrant calls. Foundry test testReentrancyDrainsVault PASS. Counterfactual: the same attack against DemoVaultFixed fails and all funds stay in place (testFixedVaultBlocksReentrancy PASS)."
+    },
+    "remediation": {
+      "strategy": "Follow checks-effects-interactions: zero the caller's balance before the external call (see DemoVaultFixed.sol). Consider a reentrancy guard as defense in depth.",
+      "code_changes": [
+        {
+          "file_name": "demo/src/DemoVault.sol",
+          "fixed_code": "balances[msg.sender] = 0;\n(bool ok, ) = msg.sender.call{value: amount}(\"\");\nrequire(ok, \"transfer failed\");"
+        }
+      ]
+    },
+    "severity": {
+      "likelihood": {
+        "score": "high",
+        "reason": "Any depositor can run it with no privilege, no victim action, and no timing window."
+      },
+      "impact": {
+        "score": "high",
+        "reason": "Total loss of all deposited funds: the attacker takes every other user's deposit."
+      },
+      "overall_severity": "high"
+    },
+    "confidence": {
+      "score": "high",
+      "reason": "Demonstrated end-to-end by a passing Foundry PoC, independently re-run, with a passing counterfactual against the fixed contract."
+    }
+  }
+]

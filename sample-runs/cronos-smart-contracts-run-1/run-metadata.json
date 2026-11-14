@@ -1,0 +1,61 @@
+{
+  "agents_planned": 8,
+  "agents_spent": 6,
+  "budget_gate": "4 hunters + 1 bytecode verifier + 1 final critic + up to 2 candidate verifiers; if candidates exceed 2, validate in fingerprint order and mark run incomplete for the rest",
+  "budget_invocations": 8,
+  "clones": {
+    "vvs-audit": "~/workspace/cronos-vvs/vvs-audit @ 545093e (2021-11-16) \u2014 SlowMist report",
+    "vvs-farm": "~/workspace/cronos-vvs/vvs-farm @ acd79b9 (2022-01-11), solc 0.6.12 runs 200",
+    "vvs-smart-craft": "~/workspace/cronos-vvs/vvs-smart-craft @ 96a09c7 (2022-05-19) \u2014 NOT in scope",
+    "vvs-swap-core": "~/workspace/cronos-vvs/vvs-swap-core @ 31a9c67 (2021-11-16), solc 0.5.16 runs 999999",
+    "vvs-swap-periphery": "~/workspace/cronos-vvs/vvs-swap-periphery @ 2c55492 (2021-11-16), solc 0.6.6 runs 999999"
+  },
+  "deployed_bytecode": "~/workspace/cronos-vvs/deployed/*.bytecode (eth_getCode via https://evm.cronos.org, 2026-11-14)",
+  "notes": "Round 1, standard profile: 4 hunters (one per boundary group) + 1 bytecode verifier in parallel, then 1 final critic, then fresh verifiers per candidate. No OS-enforced sandbox on this VM: PoCs run only against reviewed public bounty code in disposable copies with dummy data (Foundry 1.9.0 local tests, no mainnet fork, no credentials). Explorer API unreachable from this VM (api.cronoscan.com TCP fail; explorer.cronos.com is a Next.js app with no public source API found), so source comes from the VVS GitHub repos and must be verified against deployed bytecode before any finding is confirmed.",
+  "prior_ledgers": "none for these contracts (SlowMist 2021 audit read; its N1-N9 are known issues)",
+  "profile": "standard",
+  "program": "HackenProof Cronos Smart Contracts (FREE, min rep 50, KYC + PoC required; ONLY Critical $20k-$200k / Extreme $250k and High $500-$20k pay; Medium/Low $0; 24h-from-discovery rule; no submission without user confirmation)",
+  "run": "run-1",
+  "run_status": "complete",
+  "scope": [
+    "VVS WCRO 0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23",
+    "VVS Factory 0x3b44b2a187a7b3824131f8db5a74194d0a42fc15",
+    "VVS Router 0x145863Eb42Cf62847A6Ca784e6416C1682b1b2Ae",
+    "VVS Token 0x2D03bECE6747ADC00E1a131BBA1469C15fD11e03",
+    "VVS Workbench 0x6a2d178585806de5a2e5e7f9acfce44680637284",
+    "VVS Craftsman 0xDccd6455AE04b03d785F12196B492b18129564bc",
+    "VVS Multicall2 0x5e954f5972EC6BFc7dECd75779F10d848230345F",
+    "VVS VVSVault 0xA6fF77fC8E839679D4F7408E8988B564dE1A2dcD"
+  ],
+  "started_utc": "2026-11-14T14:09:00Z",
+  "hunters": [
+    "hunter-vault",
+    "hunter-craftsman",
+    "hunter-token",
+    "hunter-swap"
+  ],
+  "verifiers": [
+    "verifier-bytecode"
+  ],
+  "bytecode_verification": {
+    "result": "8/8 MATCH (independently re-run by coordinator, 2026-11-14)",
+    "method": "solc-js compile of GitHub source vs eth_getCode; metadata stripped; immutables masked via immutableReferences; 0 differing bytes per contract; metadata IPFS hashes identical",
+    "settings": {
+      "Token/Workbench/Craftsman/VVSVault": "solc 0.6.12, optimizer runs 200, istanbul, OZ 3.4.0",
+      "Factory": "solc 0.5.16, optimizer runs 200, istanbul, OZ 2.5.1 (full bytecode identical incl. embedded VVSPair metadata)",
+      "Router/WCRO": "solc 0.6.6, optimizer runs 1000, istanbul, @uniswap/lib 1.1.1 (runs 1000 found by sweeping 19 values; repo .waffle.json claims 999999 \u2014 wrong)",
+      "Multicall2": "solc 0.8.0, optimizer runs 200"
+    },
+    "immutables_verified": {
+      "Router": "factory=0x3b44b2a187a7b3824131f8db5a74194d0a42fc15, WETH=0x5C7F8A570d578ED84E63fdFA7b1eE72dEae1AE23",
+      "VVSVault": "token=VVS Token, receiptToken=Workbench, craftsman=Craftsman (all in-scope)"
+    },
+    "note": "vvs-farm HEAD contracts identical to 2021-11-16 deployment commit (git diff empty); Jan 2022 commit only changed config"
+  },
+  "critics": [
+    "critic-final"
+  ],
+  "completed_utc": "2026-11-14T14:50:00Z",
+  "findings_reportable": 0,
+  "critic_verdict": "stop: true, 0 gaps"
+}

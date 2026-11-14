@@ -1,0 +1,11 @@
+$ forge test
+
+No files changed, compilation skipped
+
+Ran 3 tests for test/DemoVault.t.sol:DemoVaultTest
+[PASS] testFixedVaultBlocksReentrancy() (gas: 604288)
+[PASS] testHonestWithdrawWorks() (gas: 301480)
+[PASS] testReentrancyDrainsVault() (gas: 668529)
+Suite result: ok. 3 passed; 0 failed; 0 skipped; finished in 976.48µs (1.52ms CPU time)
+
+Ran 1 test suite in 15.93ms (976.48µs CPU time): 3 tests passed, 0 failed, 0 skipped (3 total tests)

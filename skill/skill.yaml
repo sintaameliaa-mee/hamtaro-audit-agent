@@ -1,0 +1,5 @@
+name: security-audit
+title: Security Audit
+description: Structured coverage-led security audit of a codebase with parallel hunters, adversarial independent verification, and schema-validated findings. Use for full codebase audits and pen-test reviews with report artifacts, or for methodology guidance on a focused review.
+category: Work and knowledge
+include_in_prompt: false

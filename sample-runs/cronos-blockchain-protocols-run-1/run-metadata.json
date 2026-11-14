@@ -1,0 +1,54 @@
+{
+  "agents_planned": 13,
+  "agents_spent": 10,
+  "completed_utc": "2026-11-14T13:23:00Z",
+  "budget_gate": "6 hunters + 1 final critic + up to 6 candidate verifiers; if candidates exceed 6, validate in fingerprint order and mark run incomplete for the rest",
+  "budget_invocations": 13,
+  "clones": {
+    "chain-main": "~/workspace/cronos-chain-main (pending)",
+    "cronos": "~/workspace/cronos-cronos @ v1.8.2 f5ec24a8cacbb74b603c501b6189d5e36314987a (2026-11-09)",
+    "ethermint": "~/workspace/cronos-ethermint (pending; cronos pins crypto-org-chain/ethermint v0.24.1-0.20261001054021-cdb246e9a1d2)"
+  },
+  "notes": "Round 1, quick profile: one hunter wave + one final critic. Critic-proposed units deferred to round 2 (quick_profile_final_critic). Phase 3 and Phase 5 merged: each candidate gets one fresh independent verifier (quick-run merge). No OS-enforced sandbox on this VM: PoCs run only against reviewed public bounty code in disposable copies with dummy data; decisive checks needing the sandbox stay needs_validation.",
+  "prior_ledgers": "none for these repos",
+  "profile": "standard",
+  "program": "HackenProof Cronos Blockchain Protocols (FREE, min rep 50, KYC + PoC required; ONLY Critical $20k-$100k and High $500-$20k pay; Medium/Low $0; 24h-from-discovery rule; no submission without user confirmation)",
+  "run": "run-1",
+  "run_status": "complete",
+  "scope": [
+    "https://github.com/crypto-org-chain/cronos (latest release v1.8.2)",
+    "https://github.com/crypto-org-chain/ethermint (latest release)",
+    "https://github.com/crypto-org-chain/chain-main (latest release)"
+  ],
+  "started_utc": "2026-11-14T12:09:00Z",
+  "hunters": [
+    "hunter-mempool",
+    "hunter-evmibc",
+    "hunter-precompiles",
+    "hunter-appcore",
+    "hunter-ethermint",
+    "hunter-chainmain"
+  ],
+  "premise_corrections": [
+    "#2244 (5ab71b9a) and #2254 (b6c2a826) ARE in v1.8.2, not post-release; only #2251 (39c7cf03) and #2216 (8d2cb65b) are genuinely post-v1.8.2 (both already-fixed, liveness/DoS-class). The v1.8.1..v1.8.2 diff is essentially #2244+#2254, not a mempool rewrite. Verified by hunter-mempool via git."
+  ],
+  "hunter_wave": "complete: 6/6 units covered, 0 candidates",
+  "profile_change": "Changed quick -> standard after the final critic (critic-final) found ONE material in-scope gap: the ethermint x/evm execution core (statedb balance mint/burn, EIP-7702 delegation, msg_server EthereumTx) was never reviewed. Budget allowed one more hunter wave (6 invocations remained). Per standard profile, wave 2 is followed by a post-wave critic and, if clean, a distinct final-clean critic. Critic-proposed out-of-scope items were NOT added (rpc personal namespace = funded-keyring exclusion; debug namespaces, cronos rpc/api.go, indexer = DoS/read-only; events/decoders off consensus path; x/chainmain stub; chain-main app/ante+upgrades gov/DoS; ModuleCRC20Proxy.sol no Go wiring).",
+  "critic_final": {
+    "missing_units": 1,
+    "reassign_ids": 0,
+    "stop": false
+  },
+  "wave2": "complete: evmexec unit covered, 0 candidates (3 PoC tests pass, re-run by parent)",
+  "critic_wave2": {
+    "missing_units": 0,
+    "reassign_ids": 0,
+    "stop": true
+  },
+  "critic_clean": {
+    "missing_units": 0,
+    "reassign_ids": 0,
+    "stop": true
+  },
+  "final": "Phase 3/5 vacuous: 0 candidates, no verifiers needed. findings.json empty array (0 confirmed / 0 needs_validation / 0 rejected). Phase 6 artifacts written: REPORT.md, FINDINGS-DETAIL.md, NEEDS-VALIDATION.md. Both validators pass. 7/7 units covered, 70 checks, 127 reviewed paths, 30 hardening notes. Agents spent 10/13."
+}
