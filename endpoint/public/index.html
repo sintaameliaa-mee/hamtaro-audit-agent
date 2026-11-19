@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hamtaro Audit Agent — live demo</title>
+<style>
+  :root { --bg:#fdf6e3; --ink:#2b2118; --muted:#6b5d4f; --card:#fffdf7; --line:#e5d9c3; --accent:#b45309; --good:#166534; --bad:#b91c1c; --warn:#a16207; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--bg); color:var(--ink); line-height:1.55; }
+  main { max-width:860px; margin:0 auto; padding:32px 20px 64px; }
+  h1 { font-size:1.9em; margin:0 0 4px; }
+  h2 { margin-top:40px; border-bottom:2px solid var(--line); padding-bottom:6px; }
+  h3 { margin-bottom:4px; }
+  .sub { color:var(--muted); margin-top:0; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px 20px; margin:16px 0; }
+  .scope { border-left:6px solid var(--accent); }
+  .scope strong { color:var(--accent); }
+  .flow { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.92em; overflow-x:auto; }
+  ol.phases li { margin-bottom:10px; }
+  a { color:var(--accent); }
+  code { background:#f3ead3; padding:1px 5px; border-radius:4px; font-size:.92em; }
+  textarea { width:100%; min-height:220px; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; padding:10px; border:1px solid var(--line); border-radius:8px; background:#fffef9; }
+  .samples button, .run { cursor:pointer; border:1px solid var(--line); background:#fff; border-radius:8px; padding:8px 12px; margin:4px 4px 4px 0; font-size:.92em; }
+  .run { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; padding:10px 18px; }
+  .samples button:hover, .run:hover { filter:brightness(1.05); }
+  #result { display:none; margin-top:16px; }
+  .finding { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .sev-high { border-left:6px solid var(--bad); }
+  .sev-medium { border-left:6px solid var(--warn); }
+  .sev-low { border-left:6px solid #6b7280; }
+  .badge { display:inline-block; font-size:.78em; font-weight:700; padding:2px 8px; border-radius:999px; background:#f3ead3; margin-right:6px; }
+  .verdict { font-size:1.15em; font-weight:700; }
+  .ok { color:var(--good); }
+  .meta { color:var(--muted); font-size:.9em; }
+  pre.json { background:#1e1b16; color:#f5ead2; padding:14px; border-radius:8px; overflow-x:auto; font-size:12.5px; }
+  details { margin-top:10px; }
+  footer { margin-top:48px; color:var(--muted); font-size:.9em; border-top:1px solid var(--line); padding-top:16px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🐹 Hamtaro Audit Agent</h1>
+  <p class="sub">A coverage-led security audit agent — live demo for the
+  <a href="https://agentgames.zkverify.io/">Agent Games</a> Season 01 Wildcard track.</p>
+
+  <div class="card scope">
+    <strong>Honest scope — read this first.</strong>
+    <p>This endpoint is the agent's <strong>deterministic pre-screen</strong>:
+    it runs seven fixed pattern checks over a Solidity snippet in pure
+    JavaScript — no Foundry, no compilation, no external calls. Every
+    finding it returns is <code>verdict: needs_validation</code>, because
+    confirmation needs a runnable PoC and an independent verifier.</p>
+    <p>The <strong>full multi-agent audit</strong> — reconnaissance,
+    coverage ledger, parallel hunters, critic waves, independent
+    verification — runs in Muse following
+    <a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/skill/SKILL.md"><code>skill/SKILL.md</code></a>,
+    and is evidenced by the sample runs below. This endpoint does
+    <strong>not</strong> run the full audit, and does not claim to.</p>
+  </div>
+
+  <h2>What the agent does</h2>
+  <p>Given a target codebase and a scope, the agent runs a six-phase audit.
+  It only reports a finding after an independent verifier — a fresh agent
+  that did not hunt it — has tried, and failed, to refute it.</p>
+  <div class="card flow">reconnaissance → coverage ledger → parallel hunters → critic waves
+→ independent verification → validated findings → report</div>
+  <ol class="phases">
+    <li><strong>Reconnaissance</strong> maps the architecture, trust boundaries, and input surfaces, then seeds a deterministic <code>coverage-ledger.json</code> — every unit is planned <em>before</em> hunting starts.</li>
+    <li><strong>Coverage-led hunting</strong> assigns one isolated hunter per boundary; coverage critics run in waves until no new gap is found.</li>
+    <li><strong>Candidate validation</strong> hands every candidate to a fresh verifier whose job is to refute it from source and bounded local evidence. A candidate survives only if the verifier cannot kill it.</li>
+    <li><strong>Structured output</strong> writes <code>confirmed</code> / <code>needs_validation</code> / <code>rejected</code> records to <code>findings.json</code>, validated against a JSON schema with a zero-dependency Node validator.</li>
+    <li><strong>Independent record verification</strong> re-checks the final source claims with fresh agents; a material correction gets another verifier.</li>
+    <li><strong>Reporting</strong> derives <code>REPORT.md</code>, <code>FINDINGS-DETAIL.md</code>, and <code>NEEDS-VALIDATION.md</code> from the verified records and the ledger.</li>
+  </ol>
+
+  <h2>Try the pre-screen</h2>
+  <p>Paste a Solidity snippet (max 200 KB) and run the seven deterministic
+  checks. Nothing is stored; the code is analyzed in-memory and discarded.</p>
+  <div class="samples">
+    <span class="meta">Load a sample:</span>
+    <button type="button" data-sample="clean">Clean vault</button>
+    <button type="button" data-sample="reentrant">Reentrant vault</button>
+    <button type="button" data-sample="txorigin">tx.origin auth</button>
+  </div>
+  <textarea id="code" spellcheck="false" placeholder="// paste Solidity here"></textarea>
+  <p><button class="run" id="runBtn" type="button">Run pre-screen →</button>
+  <span class="meta" id="status"></span></p>
+  <div id="result" class="card"></div>
+
+  <h2>Worked example — the demo run</h2>
+  <p>The repo's <code>demo/</code> runs the full pipeline end-to-end against
+  a tiny vault with one intentional, labelled reentrancy bug. The committed
+  artifacts are the output of a real run — inspect them without running
+  anything:</p>
+  <div class="card">
+    <h3>DemoVault.withdraw — reentrancy, confirmed (high)</h3>
+    <p><code>withdraw()</code> sends ETH to the caller before zeroing the
+    caller's recorded balance, so a malicious receiver re-enters
+    <code>withdraw()</code> and is paid its full balance again on every
+    re-entry. A 1-ether attacker drains the entire vault — 11 ether out,
+    10 of them victim funds, 10 reentrant calls.</p>
+    <p class="meta">Confirmed by a passing Foundry PoC
+    (<code>testReentrancyDrainsVault</code>), independently re-run, with a
+    passing counterfactual against the fixed vault
+    (<code>testFixedVaultBlocksReentrancy</code>).</p>
+    <ul>
+      <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/demo/out/findings.json">demo/out/findings.json</a> — the confirmed finding record</li>
+      <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/demo/out/demo-report.md">demo/out/demo-report.md</a> — the demo report</li>
+      <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/demo/out/coverage-ledger.json">demo/out/coverage-ledger.json</a> — the coverage ledger</li>
+      <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/demo/src/DemoVault.sol">demo/src/DemoVault.sol</a> — the vulnerable vault (intentional bug, labelled)</li>
+      <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/demo/test/DemoVault.t.sol">demo/test/DemoVault.t.sol</a> — the Foundry PoC tests</li>
+    </ul>
+    <p>Run it yourself: <code>node demo/run-demo.cjs</code> (Node 18+ and Foundry). Under a minute.</p>
+  </div>
+
+  <h2>Real runs — two audits, zero findings, on purpose</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Cronos chain code (Go)</strong> — 7/7 units, 127 paths, 70 checks → <strong>0 findings</strong>.
+      <a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/tree/main/sample-runs/cronos-blockchain-protocols-run-1">artifacts</a></li>
+      <li><strong>8 VVS Finance contracts (Solidity)</strong> — 12/12 units, ~2,105 lines, 41 PoC tests → <strong>0 findings</strong>.
+      <a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/tree/main/sample-runs/cronos-smart-contracts-run-1">artifacts</a></li>
+    </ul>
+    <p class="meta">Both runs document their strongest leads and why the
+    evidence killed them. A verifier that cannot be talked out of killing a
+    weak candidate is the feature, not a failure: the output is
+    “no finding” with receipts, instead of a confident-sounding false
+    positive.</p>
+  </div>
+
+  <h2>Links</h2>
+  <ul>
+    <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent">Repo — Hamtaro Audit Agent</a></li>
+    <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/skill/SKILL.md">skill/SKILL.md — the audit workflow</a></li>
+    <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/releases/tag/demo-v1">Demo video (release demo-v1)</a></li>
+    <li><a href="https://github.com/sintaameliaa-mee/hamtaro-audit-agent/blob/main/honesty-check.md">honesty-check.md — every checkable claim and its evidence</a></li>
+    <li><a href="https://agentgames.zkverify.io/rules">Agent Games rules</a></li>
+  </ul>
+
+  <h2>API</h2>
+  <p><code>POST /api/audit</code> with <code>{"code": "&lt;Solidity source&gt;"}</code>
+  returns <code>verdict</code> + <code>findings</code> in the repo's
+  <code>findings.json</code> record shape. <code>GET /api/audit</code>
+  returns usage. Seven checks: reentrancy, tx.origin, unchecked low-level
+  call, selfdestruct, delegatecall, division-before-multiplication
+  (heuristic), missing access control (heuristic).</p>
+  <pre class="json">curl -X POST "$URL/api/audit" -H "Content-Type: application/json" \
+  -d '{"code":"contract V { function w() external { (bool ok,) = msg.sender.call{value: 1}(\"\"); require(ok); } }"}'</pre>
+
+  <footer>
+    Hamtaro Audit Agent — Agent Games Season 01 Wildcard entry. No funds, no
+    wallet, and no credentials are involved in running any of this. The demo
+    target is a local Foundry test; the sample runs audited public code.
+    Orchestration adapts <a href="https://github.com/cloudflare/security-audit-skill">Cloudflare's security-audit-skill</a> (MIT).
+  </footer>
+</main>
+<script>
+const SAMPLES = {
+  clean: `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+/// A vault that follows checks-effects-interactions: state first, call last.
+contract CleanVault {
+    mapping(address => uint256) public balances;
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "nothing to withdraw");
+        balances[msg.sender] = 0;
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        require(ok, "transfer failed");
+    }
+}
+`,
+  reentrant: `// SPDX-License-Identifier: MIT
+// INTENTIONAL BUG (demo only) — do not deploy.
+pragma solidity ^0.8.0;
+
+/// A vault with the classic reentrancy: external call BEFORE the state update.
+contract ReentrantVault {
+    mapping(address => uint256) public balances;
+
+    function deposit() external payable {
+        balances[msg.sender] += msg.value;
+    }
+
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "nothing to withdraw");
+        (bool ok, ) = msg.sender.call{value: amount}("");
+        require(ok, "transfer failed");
+        balances[msg.sender] = 0;
+    }
+}
+`,
+  txorigin: `// SPDX-License-Identifier: MIT
+// INTENTIONAL BUG (demo only) — do not deploy.
+pragma solidity ^0.8.0;
+
+/// Authorization via tx.origin: a phishing contract can act as the victim.
+contract TxOriginAuth {
+    address public owner;
+
+    constructor() {
+        owner = msg.sender;
+    }
+
+    function transferOwnership(address newOwner) external {
+        require(tx.origin == owner, "not owner");
+        owner = newOwner;
+    }
+}
+`,
+};
+const codeEl = document.getElementById("code");
+const resultEl = document.getElementById("result");
+const statusEl = document.getElementById("status");
+document.querySelectorAll("[data-sample]").forEach((b) => {
+  b.addEventListener("click", () => { codeEl.value = SAMPLES[b.dataset.sample]; });
+});
+codeEl.value = SAMPLES.reentrant;
+
+function esc(s) {
+  return String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+}
+
+document.getElementById("runBtn").addEventListener("click", async () => {
+  const code = codeEl.value;
+  if (!code.trim()) { statusEl.textContent = "Paste some Solidity first."; return; }
+  statusEl.textContent = "Running pre-screen…";
+  resultEl.style.display = "none";
+  try {
+    const r = await fetch("/api/audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code }),
+    });
+    const data = await r.json();
+    if (!r.ok) { statusEl.textContent = "Error: " + (data.error || r.status); return; }
+    statusEl.textContent = "";
+    const sev = data.stats.findings_by_severity;
+    let html = `<p class="verdict ${data.findings.length === 0 ? "ok" : ""}">${esc(data.verdict)}</p>`;
+    html += `<p class="meta">${data.stats.lines} lines · ${data.stats.functions} functions · ` +
+      `${data.findings.length} finding(s) — ${sev.high} high, ${sev.medium} medium, ${sev.low} low. ` +
+      `Every finding is <code>verdict: needs_validation</code> (pattern pre-screen, not a confirmed audit).</p>`;
+    for (const f of data.findings) {
+      html += `<div class="finding sev-${f.severity.overall_severity}">` +
+        `<span class="badge">${esc(f.severity.overall_severity.toUpperCase())}</span>` +
+        `<span class="badge">${esc(f.check)}</span>` +
+        (f.heuristic ? `<span class="badge">heuristic</span>` : "") +
+        `<strong>${esc(f.title)}</strong><p>${esc(f.description)}</p>` +
+        `<p class="meta">Confidence: ${esc(f.confidence.score)} — ${esc(f.confidence.reason)}</p>` +
+        `<p class="meta">Remediation: ${esc(f.remediation.strategy)}</p></div>`;
+    }
+    html += `<details><summary>Raw JSON response</summary><pre class="json">${esc(JSON.stringify(data, null, 2))}</pre></details>`;
+    resultEl.innerHTML = html;
+    resultEl.style.display = "block";
+  } catch (e) {
+    statusEl.textContent = "Request failed: " + e.message;
+  }
+});
+</script>
+</body>
+</html>

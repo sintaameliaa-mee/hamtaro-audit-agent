@@ -1,0 +1,1 @@
+{"description":"Public HTTPS endpoint for the Hamtaro Audit Agent (Agent Games Season 01 Wildcard): demo page + deterministic Solidity pre-screen. Zero dependencies.","engines":{"node":">=18"},"license":"MIT","name":"hamtaro-audit-agent-endpoint","private":true,"scripts":{"test":"node test/local-test.cjs"},"version":"1.0.0"}
