@@ -86,7 +86,7 @@ The user deploys — this repo only holds the code. ~10 minutes:
    - Paste the reentrant sample in the form and confirm it flags
      reentrancy (high, needs_validation).
 6. Use that URL as the **agent endpoint** in the Agent Games Wildcard
-   form (deadline: 22 Nov 2026, 22:00 UTC / 23 Nov 05:00 WIB — check the
+   form (deadline: 21 Nov 2026, 22:00 UTC / 22 Nov 05:00 WIB — check the
    current rules page for the exact close).
 
 Notes:
