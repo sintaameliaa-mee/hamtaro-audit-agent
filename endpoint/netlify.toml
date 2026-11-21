@@ -1,0 +1,12 @@
+# Netlify deploy config for the Hamtaro Audit Agent endpoint.
+# Base directory: endpoint/ — set "Base directory" to `endpoint` in the
+# Netlify site settings (or import with base `endpoint`).
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+# Keep the public path identical to the Vercel deployment.
+[[redirects]]
+  from = "/api/audit"
+  to = "/.netlify/functions/audit"
+  status = 200
